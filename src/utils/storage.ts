@@ -11,8 +11,7 @@ export const storage = {
       const data = await AsyncStorage.getItem(KEYS.TASKS);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error('Failed to get tasks:', error);
-      return null;
+      throw new Error(`Failed to get tasks: ${error}`);
     }
   },
 
@@ -20,7 +19,7 @@ export const storage = {
     try {
       await AsyncStorage.setItem(KEYS.TASKS, JSON.stringify(tasks));
     } catch (error) {
-      console.error('Failed to save tasks:', error);
+      throw new Error(`Failed to save tasks: ${error}`);
     }
   },
 
@@ -29,8 +28,7 @@ export const storage = {
       const data = await AsyncStorage.getItem(KEYS.RECORDS);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error('Failed to get records:', error);
-      return null;
+      throw new Error(`Failed to get records: ${error}`);
     }
   },
 
@@ -38,7 +36,7 @@ export const storage = {
     try {
       await AsyncStorage.setItem(KEYS.RECORDS, JSON.stringify(records));
     } catch (error) {
-      console.error('Failed to save records:', error);
+      throw new Error(`Failed to save records: ${error}`);
     }
   },
 
@@ -46,7 +44,7 @@ export const storage = {
     try {
       await AsyncStorage.multiRemove([KEYS.TASKS, KEYS.RECORDS]);
     } catch (error) {
-      console.error('Failed to clear storage:', error);
+      throw new Error(`Failed to clear storage: ${error}`);
     }
   },
 };

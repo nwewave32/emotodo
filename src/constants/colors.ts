@@ -30,6 +30,14 @@ export const colors = {
   timerPaused: '#94A3B8', // 연한 회색 (톤 맞춤)
   timerComplete: '#68D391',
 
+  // 난이도
+  difficultyEasy: '#68D391',
+  difficultyEasyBg: 'rgba(104, 211, 145, 0.15)',
+  difficultyNormal: '#4A7DFC',
+  difficultyNormalBg: 'rgba(74, 125, 252, 0.15)',
+  difficultyHard: '#FC8181',
+  difficultyHardBg: 'rgba(252, 129, 129, 0.15)',
+
   // 기타
   border: '#E2E8F0',
   shadow: 'rgba(0, 0, 0, 0.05)',

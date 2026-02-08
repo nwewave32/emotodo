@@ -23,8 +23,13 @@ export const useRecordStore = create<RecordState>((set, get) => ({
 
   loadRecords: async () => {
     set({ isLoading: true });
-    const records = await storage.getRecords<DailyRecord[]>();
-    set({ records: records || [], isLoading: false });
+    try {
+      const records = await storage.getRecords<DailyRecord[]>();
+      set({ records: records || [], isLoading: false });
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
   },
 
   addRecord: async (recordData) => {
@@ -35,8 +40,8 @@ export const useRecordStore = create<RecordState>((set, get) => ({
     };
 
     const updatedRecords = [...get().records, newRecord];
-    set({ records: updatedRecords });
     await storage.saveRecords(updatedRecords);
+    set({ records: updatedRecords });
     return newRecord;
   },
 

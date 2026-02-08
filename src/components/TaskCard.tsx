@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Task, DailyRecord } from '../types';
 import { colors } from '../constants/colors';
+import { DIFFICULTY_CONFIG } from '../constants/difficulty';
 import { QuickTimerButtons } from './QuickTimerButtons';
 
 interface TaskCardProps {
@@ -25,6 +26,7 @@ const statusCardStyle = {
   postponed: 'postponed' as const,
 };
 
+
 export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   todayRecord,
@@ -44,7 +46,26 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       ]}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>{task.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{task.title}</Text>
+          {task.difficulty && (
+            <View
+              style={[
+                styles.difficultyBadge,
+                { backgroundColor: DIFFICULTY_CONFIG[task.difficulty].bgColor },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.difficultyText,
+                  { color: DIFFICULTY_CONFIG[task.difficulty].color },
+                ]}
+              >
+                {DIFFICULTY_CONFIG[task.difficulty].label}
+              </Text>
+            </View>
+          )}
+        </View>
         {isRecorded && status && (
           <View
             style={[
@@ -70,18 +91,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <TouchableOpacity
               style={[styles.actionButton, styles.completeButton]}
               onPress={onPressComplete}
+              accessibilityRole="button"
+              accessibilityLabel={`${task.title} 완료`}
             >
               <Text style={styles.completeButtonText}>완료</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.partialButton]}
               onPress={onPressPartial}
+              accessibilityRole="button"
+              accessibilityLabel={`${task.title} 부분완료`}
             >
               <Text style={styles.partialButtonText}>부분완료</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.postponedButton]}
               onPress={onPressPostponed}
+              accessibilityRole="button"
+              accessibilityLabel={`${task.title} 미룸`}
             >
               <Text style={styles.postponedButtonText}>미룸</Text>
             </TouchableOpacity>
@@ -125,11 +152,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
   title: {
     fontSize: 17,
     fontWeight: '600',
     color: colors.textPrimary,
-    flex: 1,
+    flexShrink: 1,
+  },
+  difficultyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  difficultyText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   statusBadge: {
     paddingHorizontal: 10,

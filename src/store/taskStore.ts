@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { Task } from '../types';
+import { Task, Difficulty } from '../types';
 import { storage } from '../utils/storage';
-import { isTaskScheduledForToday } from '../utils/date';
+import { isTaskScheduledForToday, getTodayString } from '../utils/date';
 
 interface TaskState {
   tasks: Task[];
@@ -10,7 +10,7 @@ interface TaskState {
 
   // Actions
   loadTasks: () => Promise<void>;
-  addTask: (title: string, estimatedMinutes: number, repeatDays: number[]) => Promise<Task>;
+  addTask: (title: string, estimatedMinutes: number, repeatDays: number[], difficulty?: Difficulty, scheduledDate?: string) => Promise<Task>;
   updateTask: (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   getTask: (id: string) => Task | undefined;
@@ -23,44 +23,51 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   loadTasks: async () => {
     set({ isLoading: true });
-    let tasks = await storage.getTasks<Task[]>();
+    try {
+      let tasks = await storage.getTasks<Task[]>();
 
-    // 테스트 데이터: 처음 실행 시 샘플 할 일 추가
-    if (!tasks || tasks.length === 0) {
-      const sampleTasks: Task[] = [
-        {
-          id: uuidv4(),
-          title: '아침 스트레칭 10분',
-          estimatedMinutes: 10,
-          repeatDays: [0, 1, 2, 3, 4, 5, 6],
-          createdAt: new Date().toISOString(),
-          isActive: true,
-        },
-        {
-          id: uuidv4(),
-          title: '책 읽기',
-          estimatedMinutes: 15,
-          repeatDays: [0, 1, 2, 3, 4, 5, 6],
-          createdAt: new Date().toISOString(),
-          isActive: true,
-        },
-        {
-          id: uuidv4(),
-          title: '영어 단어 5개 외우기',
-          estimatedMinutes: 5,
-          repeatDays: [0, 1, 2, 3, 4, 5, 6],
-          createdAt: new Date().toISOString(),
-          isActive: true,
-        },
-      ];
-      tasks = sampleTasks;
-      await storage.saveTasks(tasks);
+      if (!tasks || tasks.length === 0) {
+        const sampleTasks: Task[] = [
+          {
+            id: uuidv4(),
+            title: '아침 스트레칭 10분',
+            estimatedMinutes: 10,
+            repeatDays: [0, 1, 2, 3, 4, 5, 6],
+            createdAt: new Date().toISOString(),
+            isActive: true,
+            difficulty: 'easy',
+          },
+          {
+            id: uuidv4(),
+            title: '책 읽기',
+            estimatedMinutes: 15,
+            repeatDays: [0, 1, 2, 3, 4, 5, 6],
+            createdAt: new Date().toISOString(),
+            isActive: true,
+            difficulty: 'normal',
+          },
+          {
+            id: uuidv4(),
+            title: '영어 단어 5개 외우기',
+            estimatedMinutes: 5,
+            repeatDays: [0, 1, 2, 3, 4, 5, 6],
+            createdAt: new Date().toISOString(),
+            isActive: true,
+            difficulty: 'easy',
+          },
+        ];
+        tasks = sampleTasks;
+        await storage.saveTasks(tasks);
+      }
+
+      set({ tasks: tasks || [], isLoading: false });
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
     }
-
-    set({ tasks: tasks || [], isLoading: false });
   },
 
-  addTask: async (title, estimatedMinutes, repeatDays) => {
+  addTask: async (title, estimatedMinutes, repeatDays, difficulty, scheduledDate) => {
     const newTask: Task = {
       id: uuidv4(),
       title,
@@ -68,11 +75,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       repeatDays,
       createdAt: new Date().toISOString(),
       isActive: true,
+      ...(difficulty !== undefined && { difficulty }),
+      ...(scheduledDate !== undefined && { scheduledDate }),
     };
 
     const updatedTasks = [...get().tasks, newTask];
-    set({ tasks: updatedTasks });
     await storage.saveTasks(updatedTasks);
+    set({ tasks: updatedTasks });
     return newTask;
   },
 
@@ -80,14 +89,14 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const updatedTasks = get().tasks.map((task) =>
       task.id === id ? { ...task, ...updates } : task
     );
-    set({ tasks: updatedTasks });
     await storage.saveTasks(updatedTasks);
+    set({ tasks: updatedTasks });
   },
 
   deleteTask: async (id) => {
     const updatedTasks = get().tasks.filter((task) => task.id !== id);
-    set({ tasks: updatedTasks });
     await storage.saveTasks(updatedTasks);
+    set({ tasks: updatedTasks });
   },
 
   getTask: (id) => {
@@ -95,8 +104,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
 
   getTodayTasks: () => {
+    const today = getTodayString();
     return get().tasks.filter(
-      (task) => task.isActive && isTaskScheduledForToday(task.repeatDays)
+      (task) => task.isActive && (
+        task.scheduledDate
+          ? task.scheduledDate === today
+          : isTaskScheduledForToday(task.repeatDays)
+      )
     );
   },
 }));

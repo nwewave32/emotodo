@@ -11,10 +11,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTaskStore } from '../store/taskStore';
 import { useRecordStore } from '../store/recordStore';
 import { colors } from '../constants/colors';
-import { formatDisplayDate, getTodayString } from '../utils/date';
+import { formatDisplayDate } from '../utils/date';
 import { messages } from '../constants/messages';
 import { DailyRecord, TaskStatus } from '../types';
-import { format, subDays, parseISO } from 'date-fns';
 
 interface GroupedRecord {
   date: string;
@@ -83,6 +82,7 @@ export const HistoryScreen: React.FC = () => {
 
   const getEmotionEmoji = (emotionKey: string, status: TaskStatus): string => {
     const emotions = messages.emotions[status];
+    if (!emotions) return '';
     const emotion = emotions.find((e) => e.key === emotionKey);
     return emotion?.emoji || '';
   };
@@ -110,7 +110,7 @@ export const HistoryScreen: React.FC = () => {
       {record.emotion && (
         <Text style={styles.emotionText}>
           {getEmotionEmoji(record.emotion, record.status)}{' '}
-          {messages.emotions[record.status].find(
+          {messages.emotions[record.status]?.find(
             (e) => e.key === record.emotion
           )?.label || record.emotion}
         </Text>
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   partialCard: {
     borderLeftWidth: 3,
-    borderLeftColor: '#9682C8',
+    borderLeftColor: colors.partial,
   },
   postponedCard: {
     borderLeftWidth: 3,

@@ -1,5 +1,7 @@
 export type TaskStatus = 'completed' | 'postponed' | 'partial';
 
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
 export interface Task {
   id: string;
   title: string;
@@ -7,6 +9,8 @@ export interface Task {
   repeatDays: number[]; // 0=일, 1=월, ..., 6=토
   createdAt: string;
   isActive: boolean;
+  difficulty?: Difficulty;
+  scheduledDate?: string; // "YYYY-MM-DD" - 특정 날짜에 예약
 }
 
 export interface DailyRecord {
