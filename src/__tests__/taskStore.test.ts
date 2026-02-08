@@ -221,6 +221,76 @@ describe('taskStore', () => {
     });
   });
 
+  describe('getTasksForDate', () => {
+    it('returns tasks matching repeatDays for the given date', () => {
+      // 2026-02-09 is Monday (1)
+      useTaskStore.setState({
+        tasks: [
+          { id: '1', title: 'A', estimatedMinutes: 5, repeatDays: [1], createdAt: '', isActive: true },
+          { id: '2', title: 'B', estimatedMinutes: 5, repeatDays: [2], createdAt: '', isActive: true },
+        ],
+      });
+
+      const result = useTaskStore.getState().getTasksForDate('2026-02-09');
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('1');
+    });
+
+    it('returns tasks matching scheduledDate', () => {
+      useTaskStore.setState({
+        tasks: [
+          { id: '1', title: 'A', estimatedMinutes: 5, repeatDays: [], createdAt: '', isActive: true, scheduledDate: '2026-03-01' },
+          { id: '2', title: 'B', estimatedMinutes: 5, repeatDays: [], createdAt: '', isActive: true, scheduledDate: '2026-03-02' },
+        ],
+      });
+
+      const result = useTaskStore.getState().getTasksForDate('2026-03-01');
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('1');
+    });
+
+    it('scheduledDate takes priority over repeatDays', () => {
+      // 2026-02-09 is Monday (1)
+      useTaskStore.setState({
+        tasks: [
+          {
+            id: '1',
+            title: 'A',
+            estimatedMinutes: 5,
+            repeatDays: [1],
+            createdAt: '',
+            isActive: true,
+            scheduledDate: '2026-05-01',
+          },
+        ],
+      });
+
+      const result = useTaskStore.getState().getTasksForDate('2026-02-09');
+      expect(result).toHaveLength(0);
+    });
+
+    it('excludes inactive tasks', () => {
+      useTaskStore.setState({
+        tasks: [
+          { id: '1', title: 'A', estimatedMinutes: 5, repeatDays: [1], createdAt: '', isActive: false },
+        ],
+      });
+
+      expect(useTaskStore.getState().getTasksForDate('2026-02-09')).toHaveLength(0);
+    });
+
+    it('returns empty array when no tasks match', () => {
+      useTaskStore.setState({
+        tasks: [
+          { id: '1', title: 'A', estimatedMinutes: 5, repeatDays: [3, 4], createdAt: '', isActive: true },
+        ],
+      });
+
+      // 2026-02-09 is Monday (1)
+      expect(useTaskStore.getState().getTasksForDate('2026-02-09')).toHaveLength(0);
+    });
+  });
+
   describe('loadTasks', () => {
     it('loads tasks from storage', async () => {
       const storedTasks = [

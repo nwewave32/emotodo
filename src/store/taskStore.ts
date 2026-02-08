@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Task, Difficulty } from '../types';
 import { storage } from '../utils/storage';
-import { isTaskScheduledForToday, getTodayString } from '../utils/date';
+import { isTaskScheduledForToday, isTaskScheduledForDate, getTodayString } from '../utils/date';
 
 interface TaskState {
   tasks: Task[];
@@ -15,6 +15,7 @@ interface TaskState {
   deleteTask: (id: string) => Promise<void>;
   getTask: (id: string) => Task | undefined;
   getTodayTasks: () => Task[];
+  getTasksForDate: (date: string) => Task[];
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -111,6 +112,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           ? task.scheduledDate === today
           : isTaskScheduledForToday(task.repeatDays)
       )
+    );
+  },
+
+  getTasksForDate: (date) => {
+    return get().tasks.filter(
+      (task) => task.isActive && isTaskScheduledForDate(task.repeatDays, task.scheduledDate, date)
     );
   },
 }));
