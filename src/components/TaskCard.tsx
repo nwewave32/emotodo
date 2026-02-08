@@ -1,0 +1,204 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Task, DailyRecord } from '../types';
+import { colors } from '../constants/colors';
+import { QuickTimerButtons } from './QuickTimerButtons';
+
+interface TaskCardProps {
+  task: Task;
+  todayRecord?: DailyRecord;
+  onPressTimer: (minutes: number) => void;
+  onPressComplete: () => void;
+  onPressPostponed: () => void;
+  onPressPartial: () => void;
+}
+
+const statusBadgeConfig = {
+  completed: { label: '완료', style: 'completedBadge' as const },
+  partial: { label: '부분완료', style: 'partialBadge' as const },
+  postponed: { label: '미룸', style: 'postponedBadge' as const },
+};
+
+const statusCardStyle = {
+  completed: 'completed' as const,
+  partial: 'partial' as const,
+  postponed: 'postponed' as const,
+};
+
+export const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  todayRecord,
+  onPressTimer,
+  onPressComplete,
+  onPressPostponed,
+  onPressPartial,
+}) => {
+  const isRecorded = !!todayRecord;
+  const status = todayRecord?.status;
+
+  return (
+    <View
+      style={[
+        styles.container,
+        isRecorded && status && styles[statusCardStyle[status]],
+      ]}
+    >
+      <View style={styles.header}>
+        <Text style={styles.title}>{task.title}</Text>
+        {isRecorded && status && (
+          <View
+            style={[
+              styles.statusBadge,
+              styles[statusBadgeConfig[status].style],
+            ]}
+          >
+            <Text style={styles.statusText}>
+              {statusBadgeConfig[status].label}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {!isRecorded && (
+        <>
+          <View style={styles.timerSection}>
+            <Text style={styles.timerLabel}>타이머로 시작하기</Text>
+            <QuickTimerButtons onSelectMinutes={onPressTimer} />
+          </View>
+
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.completeButton]}
+              onPress={onPressComplete}
+            >
+              <Text style={styles.completeButtonText}>완료</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.partialButton]}
+              onPress={onPressPartial}
+            >
+              <Text style={styles.partialButtonText}>부분완료</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.postponedButton]}
+              onPress={onPressPostponed}
+            >
+              <Text style={styles.postponedButtonText}>미룸</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {isRecorded && todayRecord?.emotion && (
+        <Text style={styles.emotionText}>
+          {todayRecord.emotion}
+        </Text>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  completed: {
+    backgroundColor: colors.completed,
+  },
+  partial: {
+    backgroundColor: colors.partial,
+  },
+  postponed: {
+    backgroundColor: colors.incomplete,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  completedBadge: {
+    backgroundColor: 'rgba(107, 157, 252, 0.2)',
+  },
+  partialBadge: {
+    backgroundColor: 'rgba(150, 130, 200, 0.2)',
+  },
+  postponedBadge: {
+    backgroundColor: 'rgba(113, 128, 150, 0.2)',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  timerSection: {
+    marginBottom: 16,
+  },
+  timerLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  completeButton: {
+    backgroundColor: colors.primary,
+  },
+  partialButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  postponedButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  completeButtonText: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  partialButtonText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  postponedButtonText: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  emotionText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+});
