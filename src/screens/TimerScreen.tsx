@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Vibration,
   Alert,
 } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTaskStore } from '../store/taskStore';
@@ -14,6 +15,11 @@ import { colors } from '../constants/colors';
 import { messages, getRandomMessage } from '../constants/messages';
 import { formatTime } from '../utils/date';
 import { RootStackParamList } from '../types';
+
+const TIMER_SIZE = 250;
+const STROKE_WIDTH = 8;
+const RADIUS = (TIMER_SIZE - STROKE_WIDTH) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Timer'>;
 type RouteProps = RouteProp<RootStackParamList, 'Timer'>;
@@ -25,17 +31,22 @@ export const TimerScreen: React.FC = () => {
   const { getTask } = useTaskStore();
 
   const task = getTask(taskId);
-  const totalSeconds = minutes * 60;
+  const totalSeconds = Math.max(minutes * 60, 1);
 
   const [remainingSeconds, setRemainingSeconds] = useState(totalSeconds);
   const [isRunning, setIsRunning] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  const encouragement = useMemo(
+    () => getRandomMessage(messages.timer.encouragement),
+    [isPaused],
+  );
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (isRunning && !isPaused && remainingSeconds > 0) {
+    if (isRunning && !isPaused && !isCompleted) {
       intervalRef.current = setInterval(() => {
         setRemainingSeconds((prev) => {
           if (prev <= 1) {
@@ -55,7 +66,7 @@ export const TimerScreen: React.FC = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, isPaused]);
+  }, [isRunning, isPaused, isCompleted]);
 
   const handlePause = () => {
     setIsPaused(true);
@@ -103,31 +114,67 @@ export const TimerScreen: React.FC = () => {
     });
   };
 
-  const progress = (totalSeconds - remainingSeconds) / totalSeconds;
-  const progressDegrees = progress * 360;
+  const remainingFraction = remainingSeconds / totalSeconds;
+  const strokeDashoffset = CIRCUMFERENCE * (1 - remainingFraction);
+
+  const ringColor = isCompleted
+    ? colors.timerComplete
+    : isPaused
+      ? colors.timerPaused
+      : colors.timerActive;
+
+  if (!task) {
+    navigation.goBack();
+    return null;
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.taskTitle}>{task?.title}</Text>
+      <Text style={styles.taskTitle}>{task.title}</Text>
 
       <View style={styles.timerContainer}>
-        <View
-          style={[
-            styles.timerCircle,
-            isCompleted && styles.timerCircleCompleted,
-          ]}
-        >
-          <Text style={styles.timerText}>{formatTime(remainingSeconds)}</Text>
-          {!isCompleted && (
-            <Text style={styles.encouragement}>
-              {getRandomMessage(messages.timer.encouragement)}
+        <View style={styles.timerWrapper}>
+          <Svg
+            width={TIMER_SIZE}
+            height={TIMER_SIZE}
+            style={styles.progressRing}
+          >
+            <Circle
+              cx={TIMER_SIZE / 2}
+              cy={TIMER_SIZE / 2}
+              r={RADIUS}
+              stroke={colors.border}
+              strokeWidth={STROKE_WIDTH}
+              fill="none"
+            />
+            <Circle
+              cx={TIMER_SIZE / 2}
+              cy={TIMER_SIZE / 2}
+              r={RADIUS}
+              stroke={ringColor}
+              strokeWidth={STROKE_WIDTH}
+              fill="none"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              transform={`rotate(-90 ${TIMER_SIZE / 2} ${TIMER_SIZE / 2})`}
+            />
+          </Svg>
+          <View style={styles.timerContent}>
+            <Text style={styles.timerText}>
+              {formatTime(remainingSeconds)}
             </Text>
-          )}
-          {isCompleted && (
-            <Text style={styles.completedText}>
-              {messages.timer.completed}
-            </Text>
-          )}
+            {!isCompleted && (
+              <Text style={styles.encouragement}>
+                {encouragement}
+              </Text>
+            )}
+            {isCompleted && (
+              <Text style={styles.completedText}>
+                {messages.timer.completed}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
 
@@ -137,7 +184,7 @@ export const TimerScreen: React.FC = () => {
             style={[styles.button, styles.completeButton]}
             onPress={handleComplete}
           >
-            <Text style={styles.buttonText}>기록하기</Text>
+            <Text style={styles.completeButtonText}>기록하러 가기</Text>
           </TouchableOpacity>
         ) : isPaused ? (
           <>
@@ -194,23 +241,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  timerCircle: {
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: colors.cardBackground,
-    borderWidth: 8,
-    borderColor: colors.timerActive,
+  timerWrapper: {
+    width: TIMER_SIZE,
+    height: TIMER_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
   },
-  timerCircleCompleted: {
-    borderColor: colors.timerComplete,
+  progressRing: {
+    position: 'absolute',
+  },
+  timerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timerText: {
     fontSize: 56,
@@ -255,7 +297,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   completeButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.timerComplete,
+  },
+  completeButtonText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: '700',
   },
   buttonText: {
     color: colors.white,
