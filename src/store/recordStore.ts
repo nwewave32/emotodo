@@ -11,11 +11,19 @@ interface RecordState {
   // Actions
   loadRecords: () => Promise<void>;
   addRecord: (record: Omit<DailyRecord, 'id' | 'recordedAt'>) => Promise<DailyRecord>;
+  updateRecord: (id: string, data: Partial<Omit<DailyRecord, 'id' | 'recordedAt'>>) => Promise<void>;
+  getRecord: (id: string) => DailyRecord | undefined;
   getTodayRecord: (taskId: string) => DailyRecord | undefined;
   getRecordsForDate: (date: string) => DailyRecord[];
   getRecordsForTask: (taskId: string) => DailyRecord[];
   hasRecordedToday: (taskId: string) => boolean;
 }
+
+const validateEnergyLevel = (level: number | undefined): void => {
+  if (level !== undefined && (level < 1 || level > 5 || !Number.isInteger(level))) {
+    throw new Error('energyLevel must be an integer between 1 and 5');
+  }
+};
 
 export const useRecordStore = create<RecordState>((set, get) => ({
   records: [],
@@ -33,6 +41,8 @@ export const useRecordStore = create<RecordState>((set, get) => ({
   },
 
   addRecord: async (recordData) => {
+    validateEnergyLevel(recordData.energyLevel);
+
     const newRecord: DailyRecord = {
       ...recordData,
       id: uuidv4(),
@@ -43,6 +53,20 @@ export const useRecordStore = create<RecordState>((set, get) => ({
     await storage.saveRecords(updatedRecords);
     set({ records: updatedRecords });
     return newRecord;
+  },
+
+  updateRecord: async (id, data) => {
+    validateEnergyLevel(data.energyLevel);
+
+    const updatedRecords = get().records.map((record) =>
+      record.id === id ? { ...record, ...data } : record
+    );
+    await storage.saveRecords(updatedRecords);
+    set({ records: updatedRecords });
+  },
+
+  getRecord: (id) => {
+    return get().records.find((record) => record.id === id);
   },
 
   getTodayRecord: (taskId) => {

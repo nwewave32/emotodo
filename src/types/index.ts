@@ -20,7 +20,9 @@ export interface DailyRecord {
   status: TaskStatus;
   emotion?: string;
   reason?: string;
+  reasonNote?: string;
   note?: string;
+  energyLevel?: number; // 1~5
   recordedAt: string;
   usedTimer: boolean;
   actualMinutes?: number;
@@ -39,7 +41,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   AddTask: { taskId?: string };
   Timer: { taskId: string; minutes: number };
-  Record: { taskId: string; usedTimer: boolean; timerCompleted?: boolean; actualMinutes?: number; initialStatus?: TaskStatus };
+  Record: { taskId: string; usedTimer: boolean; timerCompleted?: boolean; actualMinutes?: number; initialStatus?: TaskStatus; recordId?: string };
 };
 
 export type MainTabParamList = {

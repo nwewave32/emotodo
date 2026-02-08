@@ -12,6 +12,7 @@ interface TaskCardProps {
   onPressComplete: () => void;
   onPressPostponed: () => void;
   onPressPartial: () => void;
+  onPressEdit: () => void;
 }
 
 const statusBadgeConfig = {
@@ -34,16 +35,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onPressComplete,
   onPressPostponed,
   onPressPartial,
+  onPressEdit,
 }) => {
   const isRecorded = !!todayRecord;
   const status = todayRecord?.status;
 
+  const Wrapper = isRecorded ? TouchableOpacity : View;
+  const wrapperProps = isRecorded
+    ? { onPress: onPressEdit, activeOpacity: 0.7 }
+    : {};
+
   return (
-    <View
+    <Wrapper
       style={[
         styles.container,
         isRecorded && status && styles[statusCardStyle[status]],
       ]}
+      {...wrapperProps}
     >
       <View style={styles.header}>
         <View style={styles.titleRow}>
@@ -115,13 +123,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </View>
         </>
       )}
-
-      {isRecorded && todayRecord?.emotion && (
-        <Text style={styles.emotionText}>
-          {todayRecord.emotion}
-        </Text>
-      )}
-    </View>
+    </Wrapper>
   );
 };
 
@@ -237,10 +239,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 15,
     fontWeight: '500',
-  },
-  emotionText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
   },
 });

@@ -1,16 +1,20 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, TextInput, StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
 import { messages } from '../constants/messages';
 
 interface ReasonPickerProps {
   selectedReason: string | null;
   onSelect: (reason: string) => void;
+  reasonNote: string;
+  onReasonNoteChange: (text: string) => void;
 }
 
 export const ReasonPicker: React.FC<ReasonPickerProps> = ({
   selectedReason,
   onSelect,
+  reasonNote,
+  onReasonNoteChange,
 }) => {
   return (
     <View style={styles.container}>
@@ -36,6 +40,17 @@ export const ReasonPicker: React.FC<ReasonPickerProps> = ({
           </TouchableOpacity>
         ))}
       </View>
+      <TextInput
+        style={styles.reasonNoteInput}
+        value={reasonNote}
+        onChangeText={onReasonNoteChange}
+        placeholder={messages.placeholders.reasonNote}
+        placeholderTextColor={colors.textLight}
+        multiline
+        numberOfLines={2}
+        textAlignVertical="top"
+        maxLength={500}
+      />
     </View>
   );
 };
@@ -74,5 +89,16 @@ const styles = StyleSheet.create({
   reasonLabelSelected: {
     color: colors.primary,
     fontWeight: '500',
+  },
+  reasonNoteInput: {
+    marginTop: 12,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 14,
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 60,
   },
 });

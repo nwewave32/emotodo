@@ -65,6 +65,14 @@ export const HomeScreen: React.FC = () => {
     });
   };
 
+  const handlePressEdit = (taskId: string, recordId: string) => {
+    navigation.navigate('Record', {
+      taskId,
+      usedTimer: false,
+      recordId,
+    });
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -99,6 +107,10 @@ export const HomeScreen: React.FC = () => {
               onPressComplete={() => handlePressComplete(item.id)}
               onPressPostponed={() => handlePressPostponed(item.id)}
               onPressPartial={() => handlePressPartial(item.id)}
+              onPressEdit={() => {
+                const record = getTodayRecord(item.id);
+                if (record) handlePressEdit(item.id, record.id);
+              }}
             />
           )}
           contentContainerStyle={styles.listContent}

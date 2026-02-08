@@ -23,28 +23,28 @@ export const messages = {
     '작은 한 걸음이에요!',
   ],
 
-  // 감정 선택지
+  // 감정 선택지 (명사형 태그)
   emotions: {
     completed: [
-      { key: 'happy', label: '뿌듯해요', emoji: '😊' },
-      { key: 'relief', label: '후련해요', emoji: '😌' },
-      { key: 'tired', label: '힘들었어요', emoji: '😮‍💨' },
-      { key: 'proud', label: '자랑스러워요', emoji: '🥹' },
-      { key: 'neutral', label: '그냥 그래요', emoji: '😐' },
+      { key: 'happy', label: '뿌듯함', emoji: '😊' },
+      { key: 'relief', label: '후련함', emoji: '😌' },
+      { key: 'tired', label: '피로', emoji: '😮‍💨' },
+      { key: 'proud', label: '자부심', emoji: '🥹' },
+      { key: 'neutral', label: '무난함', emoji: '😐' },
     ],
     postponed: [
-      { key: 'tired', label: '피곤했어요', emoji: '😴' },
-      { key: 'anxious', label: '마음이 무거워요', emoji: '😔' },
-      { key: 'okay', label: '괜찮아요', emoji: '🙂' },
-      { key: 'busy', label: '바빴어요', emoji: '🏃' },
-      { key: 'neutral', label: '특별한 감정 없어요', emoji: '😶' },
+      { key: 'tired', label: '피로', emoji: '😴' },
+      { key: 'anxious', label: '무거움', emoji: '😔' },
+      { key: 'okay', label: '무난함', emoji: '🙂' },
+      { key: 'busy', label: '분주함', emoji: '🏃' },
+      { key: 'neutral', label: '무감정', emoji: '😶' },
     ],
     partial: [
-      { key: 'proud', label: '그래도 했어요', emoji: '💪' },
-      { key: 'relief', label: '조금이라도 해서 다행', emoji: '😌' },
-      { key: 'frustrated', label: '더 하고 싶었어요', emoji: '😤' },
-      { key: 'tired', label: '힘들었어요', emoji: '😮‍💨' },
-      { key: 'neutral', label: '그냥 그래요', emoji: '😐' },
+      { key: 'proud', label: '성취감', emoji: '💪' },
+      { key: 'relief', label: '안도감', emoji: '😌' },
+      { key: 'frustrated', label: '아쉬움', emoji: '😤' },
+      { key: 'tired', label: '피로', emoji: '😮‍💨' },
+      { key: 'neutral', label: '무난함', emoji: '😐' },
     ],
   },
 
@@ -62,6 +62,7 @@ export const messages = {
   placeholders: {
     taskTitle: '무엇을 하고 싶으세요?',
     note: '하고 싶은 말이 있다면 적어주세요 (선택)',
+    reasonNote: '조금 더 자세히 적어볼까요? (선택)',
   },
 
   // 버튼
@@ -93,7 +94,17 @@ export const messages = {
     howDoYouFeel: '지금 기분이 어때요?',
     whyNotComplete: '왜 그랬을까요?',
     anyThoughts: '하고 싶은 말이 있나요?',
+    energyLevel: '오늘 에너지 레벨은?',
   },
+
+  // 에너지 레벨
+  energyLevels: [
+    { level: 1, label: '바닥', emoji: '🪫' },
+    { level: 2, label: '낮음', emoji: '😴' },
+    { level: 3, label: '보통', emoji: '🙂' },
+    { level: 4, label: '좋음', emoji: '😄' },
+    { level: 5, label: '최고', emoji: '⚡' },
+  ],
 };
 
 export const getRandomMessage = (messages: string[]): string => {

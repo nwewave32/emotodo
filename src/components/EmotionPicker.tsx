@@ -20,21 +20,21 @@ export const EmotionPicker: React.FC<EmotionPickerProps> = ({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{messages.questions.howDoYouFeel}</Text>
-      <View style={styles.emotionsGrid}>
+      <View style={styles.tagsRow}>
         {emotions.map((emotion) => (
           <TouchableOpacity
             key={emotion.key}
             style={[
-              styles.emotionButton,
-              selectedEmotion === emotion.key && styles.emotionButtonSelected,
+              styles.tag,
+              selectedEmotion === emotion.key && styles.tagSelected,
             ]}
             onPress={() => onSelect(emotion.key)}
           >
             <Text style={styles.emoji}>{emotion.emoji}</Text>
             <Text
               style={[
-                styles.emotionLabel,
-                selectedEmotion === emotion.key && styles.emotionLabelSelected,
+                styles.tagLabel,
+                selectedEmotion === emotion.key && styles.tagLabelSelected,
               ]}
             >
               {emotion.label}
@@ -56,35 +56,34 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 12,
   },
-  emotionsGrid: {
+  tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  emotionButton: {
+  tag: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 12,
+    borderRadius: 20,
     backgroundColor: colors.cardBackground,
     borderWidth: 1,
     borderColor: colors.border,
-    minWidth: 80,
+    gap: 6,
   },
-  emotionButtonSelected: {
+  tagSelected: {
     backgroundColor: colors.primaryLight,
     borderColor: colors.primary,
   },
   emoji: {
-    fontSize: 24,
-    marginBottom: 4,
+    fontSize: 18,
   },
-  emotionLabel: {
-    fontSize: 12,
+  tagLabel: {
+    fontSize: 14,
     color: colors.textSecondary,
   },
-  emotionLabelSelected: {
+  tagLabelSelected: {
     color: colors.primary,
     fontWeight: '500',
   },

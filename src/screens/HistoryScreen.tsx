@@ -116,8 +116,19 @@ export const HistoryScreen: React.FC = () => {
         </Text>
       )}
 
+      {record.energyLevel != null && (
+        <Text style={styles.energyText}>
+          {messages.energyLevels[record.energyLevel - 1]?.emoji}{' '}
+          에너지 {messages.energyLevels[record.energyLevel - 1]?.label}
+        </Text>
+      )}
+
       {record.status === 'postponed' && record.reason && (
         <Text style={styles.reasonText}>{getReasonLabel(record.reason)}</Text>
+      )}
+
+      {record.status === 'postponed' && record.reasonNote && (
+        <Text style={styles.reasonNoteText}>{record.reasonNote}</Text>
       )}
 
       {record.note && <Text style={styles.noteText}>{record.note}</Text>}
@@ -237,11 +248,21 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
   },
+  energyText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
   reasonText: {
     fontSize: 13,
     color: colors.textSecondary,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  reasonNoteText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 4,
   },
   noteText: {
     fontSize: 13,

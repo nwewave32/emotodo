@@ -8,6 +8,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -16,6 +17,7 @@ import { useTaskStore } from '../store/taskStore';
 import { useRecordStore } from '../store/recordStore';
 import { EmotionPicker } from '../components/EmotionPicker';
 import { ReasonPicker } from '../components/ReasonPicker';
+import { EnergyLevelPicker } from '../components/EnergyLevelPicker';
 import { colors } from '../constants/colors';
 import { messages, getRandomMessage } from '../constants/messages';
 import { getTodayString } from '../utils/date';
@@ -36,14 +38,17 @@ export const RecordScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
-  const { taskId, usedTimer, timerCompleted, actualMinutes, initialStatus } = route.params;
+  const { taskId, usedTimer, timerCompleted, actualMinutes, initialStatus, recordId } = route.params;
 
   const { getTask } = useTaskStore();
-  const { addRecord } = useRecordStore();
+  const { addRecord, updateRecord, getRecord } = useRecordStore();
 
   const task = getTask(taskId);
+  const existingRecord = recordId ? getRecord(recordId) : undefined;
+  const isEditing = !!existingRecord;
 
   const getInitialStatus = (): TaskStatus | null => {
+    if (existingRecord) return existingRecord.status;
     if (initialStatus !== undefined) return initialStatus;
     if (usedTimer && timerCompleted !== undefined) {
       return timerCompleted ? 'completed' : 'partial';
@@ -52,9 +57,11 @@ export const RecordScreen: React.FC = () => {
   };
 
   const [status, setStatus] = useState<TaskStatus | null>(getInitialStatus);
-  const [emotion, setEmotion] = useState<string | null>(null);
-  const [reason, setReason] = useState<string | null>(null);
-  const [note, setNote] = useState('');
+  const [emotion, setEmotion] = useState<string | null>(existingRecord?.emotion ?? null);
+  const [reason, setReason] = useState<string | null>(existingRecord?.reason ?? null);
+  const [reasonNote, setReasonNote] = useState(existingRecord?.reasonNote ?? '');
+  const [energyLevel, setEnergyLevel] = useState<number | null>(existingRecord?.energyLevel ?? null);
+  const [note, setNote] = useState(existingRecord?.note ?? '');
 
   // 메시지가 타이핑마다 바뀌지 않도록 고정
   const statusMessage = useMemo(() => {
@@ -71,22 +78,35 @@ export const RecordScreen: React.FC = () => {
   const handleSave = async () => {
     if (status === null) return;
 
-    await addRecord({
-      taskId,
-      date: getTodayString(),
+    const recordData = {
       status,
-      emotion: emotion || undefined,
-      reason: status === 'postponed' ? reason || undefined : undefined,
+      emotion: emotion ?? undefined,
+      reason: status === 'postponed' ? (reason ?? undefined) : undefined,
+      reasonNote: status === 'postponed' ? (reasonNote.trim() || undefined) : undefined,
+      energyLevel: energyLevel ?? undefined,
       note: note.trim() || undefined,
-      usedTimer,
-      actualMinutes,
-      timerCompleted,
-    });
+    };
 
-    navigation.popToTop();
+    try {
+      if (isEditing && recordId) {
+        await updateRecord(recordId, recordData);
+      } else {
+        await addRecord({
+          ...recordData,
+          taskId,
+          date: getTodayString(),
+          usedTimer,
+          actualMinutes,
+          timerCompleted,
+        });
+      }
+      navigation.popToTop();
+    } catch {
+      Alert.alert('저장 실패', '기록을 저장하는 중 문제가 발생했어요. 다시 시도해주세요.');
+    }
   };
 
-  const canSave = status !== null;
+  const canSave = status !== null && emotion !== null && energyLevel !== null;
 
   return (
     <KeyboardAvoidingView
@@ -144,6 +164,8 @@ export const RecordScreen: React.FC = () => {
                         setStatus(s);
                         setEmotion(null);
                         setReason(null);
+                        setReasonNote('');
+                        setEnergyLevel(null);
                       }}
                     >
                       <Text style={styles.statusToggleText}>
@@ -160,8 +182,18 @@ export const RecordScreen: React.FC = () => {
               onSelect={setEmotion}
             />
 
+            <EnergyLevelPicker
+              selectedLevel={energyLevel}
+              onSelect={setEnergyLevel}
+            />
+
             {status === 'postponed' && (
-              <ReasonPicker selectedReason={reason} onSelect={setReason} />
+              <ReasonPicker
+                selectedReason={reason}
+                onSelect={setReason}
+                reasonNote={reasonNote}
+                onReasonNoteChange={setReasonNote}
+              />
             )}
 
             <View style={styles.noteSection}>
