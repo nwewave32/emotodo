@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { useFadeIn } from '../hooks/useAnimatedValue';
 
 interface WizardStepProps {
@@ -14,7 +14,28 @@ export const WizardStep: React.FC<WizardStepProps> = ({
   isActive,
   children,
 }) => {
+  const colors = useColors();
   const fadeOpacity = useFadeIn(250);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+    },
+    question: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: 32,
+    },
+    content: {
+      width: '100%',
+      alignItems: 'center',
+    },
+  }), [colors]);
 
   if (!isActive) return null;
 
@@ -25,23 +46,3 @@ export const WizardStep: React.FC<WizardStepProps> = ({
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  question: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  content: {
-    width: '100%',
-    alignItems: 'center',
-  },
-});

@@ -1,6 +1,6 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -18,7 +18,7 @@ import { EmotionOrb } from '../components/EmotionOrb';
 import { EnergySlider } from '../components/EnergySlider';
 import { GlowDot } from '../components/GlowDot';
 import { ReasonPicker } from '../components/ReasonPicker';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { messages, wizard } from '../constants/messages';
 import { useRecordStore } from '../store/recordStore';
 import { useTaskStore } from '../store/taskStore';
@@ -28,28 +28,13 @@ import { getTodayString } from '../utils/date';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Record'>;
 type RouteProps = RouteProp<RootStackParamList, 'Record'>;
 
-const statusConfig: Array<{
-  status: TaskStatus;
-  label: string;
-  color: string;
-}> = [
-  { status: 'completed', label: '완료했어요', color: colors.completed },
-  { status: 'partial', label: '조금 했어요', color: colors.partial },
-  { status: 'postponed', label: '미뤘어요', color: colors.postponed },
-];
-
-const STEP_COLORS = [
-  colors.textLight,
-  colors.primary,
-  colors.primary,
-  colors.primary,
-];
 const AUTO_ADVANCE_DELAY = 400;
 
 export const RecordScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const {
     taskId,
     usedTimer,
@@ -77,6 +62,16 @@ export const RecordScreen: React.FC = () => {
 
   const hasInitialStatus = getInitialStatus() !== null;
 
+  const statusConfig: Array<{
+    status: TaskStatus;
+    label: string;
+    color: string;
+  }> = useMemo(() => [
+    { status: 'completed', label: '완료했어요', color: colors.completed },
+    { status: 'partial', label: '조금 했어요', color: colors.partial },
+    { status: 'postponed', label: '미뤘어요', color: colors.postponed },
+  ], [colors]);
+
   const [status, setStatus] = useState<TaskStatus | null>(getInitialStatus);
   const [emotion, setEmotion] = useState<string | null>(
     existingRecord?.emotion ?? null
@@ -97,7 +92,7 @@ export const RecordScreen: React.FC = () => {
 
   const canSave = status !== null && emotion !== null && energyLevel !== null;
 
-  const totalSteps = status === 'postponed' ? 4 : 4;
+  const totalSteps = 4;
 
   const crossFade = (nextStep: number) => {
     Animated.timing(fadeAnim, {
@@ -173,6 +168,92 @@ export const RecordScreen: React.FC = () => {
       );
     }
   };
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    progressDots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    backButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+    },
+    backText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    stepContainer: {
+      flex: 1,
+    },
+    stepContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+    },
+    question: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: 32,
+    },
+    statusCards: {
+      width: '100%',
+      gap: 12,
+    },
+    statusCard: {
+      paddingVertical: 24,
+      borderRadius: 16,
+      backgroundColor: colors.cardBackground,
+      borderWidth: 1.5,
+      alignItems: 'center',
+    },
+    statusLabel: {
+      fontSize: 18,
+      fontWeight: '600',
+    },
+    scrollStep: {
+      flex: 1,
+    },
+    scrollStepContent: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    noteInput: {
+      backgroundColor: colors.cardElevated,
+      borderRadius: 12,
+      padding: 16,
+      fontSize: 15,
+      color: colors.textPrimary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minHeight: 100,
+      marginBottom: 24,
+    },
+    saveButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    saveButtonDisabled: {
+      backgroundColor: colors.textLight,
+    },
+    saveButtonText: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  }), [colors]);
 
   return (
     <KeyboardAvoidingView
@@ -284,89 +365,3 @@ export const RecordScreen: React.FC = () => {
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  progressDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  backButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  backText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  stepContainer: {
-    flex: 1,
-  },
-  stepContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  question: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  statusCards: {
-    width: '100%',
-    gap: 12,
-  },
-  statusCard: {
-    paddingVertical: 24,
-    borderRadius: 16,
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1.5,
-    alignItems: 'center',
-  },
-  statusLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  scrollStep: {
-    flex: 1,
-  },
-  scrollStepContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  noteInput: {
-    backgroundColor: colors.cardElevated,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 15,
-    color: colors.textPrimary,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minHeight: 100,
-    marginBottom: 24,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    backgroundColor: colors.textLight,
-  },
-  saveButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

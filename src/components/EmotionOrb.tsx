@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { messages } from '../constants/messages';
 import { TaskStatus } from '../types';
+import { Colors } from '../constants/colors';
 
 interface EmotionOrbProps {
   status: TaskStatus;
@@ -10,7 +11,7 @@ interface EmotionOrbProps {
   onSelect: (emotion: string) => void;
 }
 
-const emotionColorMap: Record<string, { color: string; glow: string }> = {
+const buildEmotionColorMap = (colors: Colors): Record<string, { color: string; glow: string }> => ({
   happy: { color: colors.emotionHappy, glow: colors.glowHappy },
   relief: { color: colors.emotionRelief, glow: colors.glowRelief },
   tired: { color: colors.emotionTired, glow: colors.glowTired },
@@ -20,10 +21,7 @@ const emotionColorMap: Record<string, { color: string; glow: string }> = {
   okay: { color: colors.emotionRelief, glow: colors.glowRelief },
   busy: { color: colors.emotionAnxious, glow: colors.glowAnxious },
   frustrated: { color: colors.emotionAnxious, glow: colors.glowAnxious },
-};
-
-const getEmotionColors = (key: string) =>
-  emotionColorMap[key] || { color: colors.primary, glow: colors.primaryMuted };
+});
 
 const ORB_SIZE = 64;
 const ORB_SELECTED_SIZE = 72;
@@ -34,9 +32,12 @@ const OrbItem: React.FC<{
   label: string;
   isSelected: boolean;
   onPress: () => void;
-}> = ({ emotionKey, emoji, label, isSelected, onPress }) => {
+  colors: Colors;
+  emotionColorMap: Record<string, { color: string; glow: string }>;
+  styles: Record<string, any>;
+}> = ({ emotionKey, emoji, label, isSelected, onPress, colors, emotionColorMap, styles }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const { color, glow } = getEmotionColors(emotionKey);
+  const { color, glow } = emotionColorMap[emotionKey] || { color: colors.primary, glow: colors.primaryMuted };
 
   const handlePress = () => {
     scaleAnim.setValue(0.85);
@@ -95,6 +96,37 @@ export const EmotionOrb: React.FC<EmotionOrbProps> = ({
   selectedEmotion,
   onSelect,
 }) => {
+  const colors = useColors();
+  const emotionColorMap = useMemo(() => buildEmotionColorMap(colors), [colors]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      gap: 16,
+    },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 24,
+    },
+    bottomRow: {
+      paddingHorizontal: 20,
+    },
+    orb: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emoji: {
+      fontSize: 28,
+    },
+    label: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 6,
+    },
+  }), [colors]);
+
   const emotions = messages.emotions[status];
   const topRow = emotions.slice(0, 3);
   const bottomRow = emotions.slice(3);
@@ -110,6 +142,9 @@ export const EmotionOrb: React.FC<EmotionOrbProps> = ({
             label={e.label}
             isSelected={selectedEmotion === e.key}
             onPress={() => onSelect(e.key)}
+            colors={colors}
+            emotionColorMap={emotionColorMap}
+            styles={styles}
           />
         ))}
       </View>
@@ -122,37 +157,12 @@ export const EmotionOrb: React.FC<EmotionOrbProps> = ({
             label={e.label}
             isSelected={selectedEmotion === e.key}
             onPress={() => onSelect(e.key)}
+            colors={colors}
+            emotionColorMap={emotionColorMap}
+            styles={styles}
           />
         ))}
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    gap: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 24,
-  },
-  bottomRow: {
-    paddingHorizontal: 20,
-  },
-  orb: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emoji: {
-    fontSize: 28,
-  },
-  label: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 6,
-  },
-});

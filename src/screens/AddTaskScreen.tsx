@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,12 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTaskStore } from '../store/taskStore';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
+import { useThemeStore } from '../store/themeStore';
 import { messages } from '../constants/messages';
 import { DAY_LABELS } from '../utils/date';
 import { RootStackParamList, Difficulty } from '../types';
-import { DIFFICULTY_OPTIONS } from '../constants/difficulty';
+import { getDifficultyOptions } from '../constants/difficulty';
 import { format, parse } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
@@ -30,7 +31,11 @@ const ESTIMATED_TIMES = [5, 10, 15, 20, 30];
 export const AddTaskScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const colors = useColors();
+  const themeMode = useThemeStore((s) => s.mode);
   const { addTask, updateTask, getTask, deleteTask } = useTaskStore();
+
+  const difficultyOptions = useMemo(() => getDifficultyOptions(colors), [colors]);
 
   const editingTaskId = route.params?.taskId;
   const editingTask = editingTaskId ? getTask(editingTaskId) : undefined;
@@ -119,6 +124,199 @@ export const AddTaskScreen: React.FC = () => {
     ]);
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: 20,
+    },
+    section: {
+      marginBottom: 28,
+    },
+    label: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    input: {
+      backgroundColor: colors.cardElevated,
+      borderRadius: 12,
+      padding: 16,
+      fontSize: 16,
+      color: colors.textPrimary,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    timeButtons: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    timeButton: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 20,
+      backgroundColor: colors.cardBackground,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    timeButtonSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    timeButtonText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    timeButtonTextSelected: {
+      color: colors.white,
+      fontWeight: '600',
+    },
+    dayButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    dayButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.cardBackground,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dayButtonSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    dayButtonText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    dayButtonTextSelected: {
+      color: colors.white,
+      fontWeight: '600',
+    },
+    difficultyButtons: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    difficultyButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 12,
+      backgroundColor: colors.cardBackground,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+    },
+    difficultyButtonText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    difficultyButtonTextSelected: {
+      color: colors.white,
+      fontWeight: '600',
+    },
+    sublabel: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 12,
+      marginTop: -4,
+    },
+    datePickerButton: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+    },
+    datePickerButtonText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    dateSelected: {
+      flexDirection: 'row',
+      gap: 10,
+      alignItems: 'center',
+    },
+    dateDisplay: {
+      flex: 1,
+      backgroundColor: colors.primaryMuted,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      alignItems: 'center',
+    },
+    dateDisplayText: {
+      fontSize: 15,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    dateClearButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    dateClearButtonText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    datePickerContainer: {
+      marginTop: 12,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    dateConfirmButton: {
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    dateConfirmButtonText: {
+      fontSize: 15,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    buttonContainer: {
+      marginTop: 20,
+      gap: 12,
+    },
+    saveButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    saveButtonText: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    deleteButton: {
+      paddingVertical: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.danger,
+    },
+    deleteButtonText: {
+      color: colors.danger,
+      fontSize: 16,
+      fontWeight: '500',
+    },
+  }), [colors]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.section}>
@@ -192,7 +390,7 @@ export const AddTaskScreen: React.FC = () => {
       <View style={styles.section}>
         <Text style={styles.label}>예상 난이도</Text>
         <View style={styles.difficultyButtons}>
-          {DIFFICULTY_OPTIONS.map((option) => (
+          {difficultyOptions.map((option) => (
             <TouchableOpacity
               key={option.value}
               style={[
@@ -253,7 +451,7 @@ export const AddTaskScreen: React.FC = () => {
               minimumDate={new Date()}
               onChange={handleDateChange}
               locale="ko"
-              themeVariant="dark"
+              themeVariant={themeMode}
             />
             {Platform.OS === 'ios' && (
               <TouchableOpacity
@@ -288,196 +486,3 @@ export const AddTaskScreen: React.FC = () => {
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: 20,
-  },
-  section: {
-    marginBottom: 28,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  input: {
-    backgroundColor: colors.cardElevated,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.textPrimary,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  timeButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  timeButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  timeButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  timeButtonText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  timeButtonTextSelected: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-  dayButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dayButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayButtonSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dayButtonText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  dayButtonTextSelected: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-  difficultyButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  difficultyButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  difficultyButtonText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  difficultyButtonTextSelected: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-  sublabel: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 12,
-    marginTop: -4,
-  },
-  datePickerButton: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  datePickerButtonText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  dateSelected: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  },
-  dateDisplay: {
-    flex: 1,
-    backgroundColor: colors.primaryMuted,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    alignItems: 'center',
-  },
-  dateDisplayText: {
-    fontSize: 15,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  dateClearButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dateClearButtonText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  datePickerContainer: {
-    marginTop: 12,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  dateConfirmButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  dateConfirmButtonText: {
-    fontSize: 15,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  buttonContainer: {
-    marginTop: 20,
-    gap: 12,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.danger,
-  },
-  deleteButtonText: {
-    color: colors.danger,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-});

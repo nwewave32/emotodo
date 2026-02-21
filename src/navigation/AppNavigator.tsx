@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -8,26 +8,30 @@ import { TimerScreen } from '../screens/TimerScreen';
 import { RecordScreen } from '../screens/RecordScreen';
 import { ChecklistIcon } from '../components/icons/ChecklistIcon';
 import { CalendarIcon } from '../components/icons/CalendarIcon';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { RootStackParamList, MainTabParamList } from '../types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainTabs: React.FC = () => {
+  const colors = useColors();
+
+  const tabBarStyle = useMemo(() => ({
+    backgroundColor: colors.cardBackground,
+    borderTopColor: colors.border,
+    paddingBottom: 20,
+    paddingTop: 8,
+    height: 80,
+  }), [colors]);
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textLight,
-        tabBarStyle: {
-          backgroundColor: colors.cardBackground,
-          borderTopColor: colors.border,
-          paddingBottom: 20,
-          paddingTop: 8,
-          height: 80,
-        },
+        tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
@@ -59,6 +63,8 @@ const MainTabs: React.FC = () => {
 };
 
 export const AppNavigator: React.FC = () => {
+  const colors = useColors();
+
   return (
     <Stack.Navigator
       screenOptions={{

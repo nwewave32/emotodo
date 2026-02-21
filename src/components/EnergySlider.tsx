@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { messages } from '../constants/messages';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -12,18 +12,61 @@ interface EnergySliderProps {
   onSelect: (level: number) => void;
 }
 
-const energyColors = [
-  colors.emotionAnxious,
-  colors.emotionTired,
-  colors.emotionNeutral,
-  colors.emotionRelief,
-  colors.emotionHappy,
-];
-
 export const EnergySlider: React.FC<EnergySliderProps> = ({
   selectedLevel,
   onSelect,
 }) => {
+  const colors = useColors();
+
+  const energyColors = useMemo(() => [
+    colors.emotionAnxious,
+    colors.emotionTired,
+    colors.emotionNeutral,
+    colors.emotionRelief,
+    colors.emotionHappy,
+  ], [colors]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      width: '100%',
+      gap: 8,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      backgroundColor: colors.cardElevated,
+      gap: 12,
+    },
+    rowSelected: {
+      backgroundColor: colors.cardBackground,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emoji: {
+      fontSize: 20,
+      width: 28,
+      textAlign: 'center',
+    },
+    label: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      width: 40,
+    },
+    barTrack: {
+      flex: 1,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.cardElevated,
+    },
+    barFill: {
+      height: 8,
+      borderRadius: 4,
+    },
+  }), [colors]);
+
   const handleSelect = (level: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     onSelect(level);
@@ -73,44 +116,3 @@ export const EnergySlider: React.FC<EnergySliderProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    gap: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: colors.cardElevated,
-    gap: 12,
-  },
-  rowSelected: {
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  emoji: {
-    fontSize: 20,
-    width: 28,
-    textAlign: 'center',
-  },
-  label: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    width: 40,
-  },
-  barTrack: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.cardElevated,
-  },
-  barFill: {
-    height: 8,
-    borderRadius: 4,
-  },
-});

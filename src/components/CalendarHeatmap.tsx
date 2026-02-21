@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
+import { withOpacity } from '../utils/color';
 import { getCalendarDays, getMonthLabel, getTodayString, DAY_LABELS } from '../utils/date';
 
 export interface HeatmapDateInfo {
@@ -18,13 +19,6 @@ interface CalendarHeatmapProps {
   onNextMonth: () => void;
 }
 
-const heatmapColors: Record<string, string> = {
-  completed: colors.heatmapCompleted,
-  partial: colors.heatmapPartial,
-  postponed: colors.heatmapPostponed,
-  mixed: colors.heatmapMixed,
-};
-
 export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
   year,
   month,
@@ -34,9 +28,92 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
   onPrevMonth,
   onNextMonth,
 }) => {
+  const colors = useColors();
   const today = getTodayString();
   const days = useMemo(() => getCalendarDays(year, month), [year, month]);
   const monthLabel = useMemo(() => getMonthLabel(year, month), [year, month]);
+
+  const heatmapColors: Record<string, string> = useMemo(() => ({
+    completed: colors.heatmapCompleted,
+    partial: colors.heatmapPartial,
+    postponed: colors.heatmapPostponed,
+    mixed: colors.heatmapMixed,
+  }), [colors]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 16,
+      padding: 12,
+      marginBottom: 16,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
+    navButton: {
+      padding: 8,
+    },
+    navText: {
+      fontSize: 14,
+      color: colors.textPrimary,
+    },
+    monthLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    weekHeader: {
+      flexDirection: 'row',
+      marginBottom: 4,
+    },
+    weekLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    sundayLabel: {
+      color: colors.danger,
+    },
+    saturdayLabel: {
+      color: colors.primary,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    dayCell: {
+      width: '14.28%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 8,
+      minHeight: 48,
+      borderRadius: 8,
+    },
+    dayText: {
+      fontSize: 14,
+      color: colors.textPrimary,
+    },
+    todayCell: {
+      borderWidth: 1.5,
+      borderColor: withOpacity(colors.primary, 0.3),
+      borderRadius: 8,
+    },
+    todayText: {
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    selectedUnderline: {
+      width: 16,
+      height: 2,
+      borderRadius: 1,
+      backgroundColor: colors.primary,
+      marginTop: 3,
+    },
+  }), [colors]);
 
   const renderDay = (dateStr: string | null, index: number) => {
     if (!dateStr) {
@@ -107,78 +184,3 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  navButton: {
-    padding: 8,
-  },
-  navText: {
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  monthLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  weekHeader: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  weekLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  sundayLabel: {
-    color: colors.danger,
-  },
-  saturdayLabel: {
-    color: colors.primary,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  dayCell: {
-    width: '14.28%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    minHeight: 48,
-    borderRadius: 8,
-  },
-  dayText: {
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  todayCell: {
-    borderWidth: 1.5,
-    borderColor: colors.primary + '4D',
-    borderRadius: 8,
-  },
-  todayText: {
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  selectedUnderline: {
-    width: 16,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: colors.primary,
-    marginTop: 3,
-  },
-});

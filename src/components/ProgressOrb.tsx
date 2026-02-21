@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { usePulse } from '../hooks/useAnimatedValue';
 
 interface ProgressOrbProps {
@@ -22,6 +22,7 @@ export const ProgressOrb: React.FC<ProgressOrbProps> = ({
   postponed,
   total,
 }) => {
+  const colors = useColors();
   const allDone = total > 0 && completed + partial + postponed >= total;
   const pulseOpacity = usePulse(0.5, 1, 2000);
 
@@ -39,6 +40,29 @@ export const ProgressOrb: React.FC<ProgressOrbProps> = ({
 
   const WrapperComponent = allDone ? Animated.View : View;
   const wrapperStyle = allDone ? { opacity: pulseOpacity } : {};
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      width: ORB_SIZE,
+      height: ORB_SIZE,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    centerText: {
+      position: 'absolute',
+      flexDirection: 'row',
+      alignItems: 'baseline',
+    },
+    count: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    total: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+  }), [colors]);
 
   return (
     <WrapperComponent style={[styles.container, wrapperStyle]}>
@@ -103,26 +127,3 @@ export const ProgressOrb: React.FC<ProgressOrbProps> = ({
     </WrapperComponent>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: ORB_SIZE,
-    height: ORB_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centerText: {
-    position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  count: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  total: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-});

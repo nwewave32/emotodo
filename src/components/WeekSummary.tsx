@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { formatDate } from '../utils/date';
 import { TaskStatus } from '../types';
 
@@ -8,13 +8,37 @@ interface WeekSummaryProps {
   records: Array<{ date: string; status: TaskStatus }>;
 }
 
-const statusColors: Record<TaskStatus, string> = {
-  completed: colors.completed,
-  partial: colors.partial,
-  postponed: colors.postponed,
-};
-
 export const WeekSummary: React.FC<WeekSummaryProps> = ({ records }) => {
+  const colors = useColors();
+
+  const statusColors: Record<TaskStatus, string> = useMemo(() => ({
+    completed: colors.completed,
+    partial: colors.partial,
+    postponed: colors.postponed,
+  }), [colors]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      marginBottom: 16,
+      paddingHorizontal: 4,
+    },
+    barRow: {
+      flexDirection: 'row',
+      gap: 4,
+      marginBottom: 8,
+    },
+    block: {
+      flex: 1,
+      height: 8,
+      borderRadius: 4,
+    },
+    summary: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+  }), [colors]);
+
   const weekData = useMemo(() => {
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -46,7 +70,7 @@ export const WeekSummary: React.FC<WeekSummaryProps> = ({ records }) => {
 
     const recordedDays = days.filter((d) => d.color !== null).length;
     return { days, recordedDays };
-  }, [records]);
+  }, [records, statusColors]);
 
   return (
     <View style={styles.container}>
@@ -67,25 +91,3 @@ export const WeekSummary: React.FC<WeekSummaryProps> = ({ records }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  barRow: {
-    flexDirection: 'row',
-    gap: 4,
-    marginBottom: 8,
-  },
-  block: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-  },
-  summary: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-});

@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
+import { withOpacity } from '../utils/color';
 
 interface BreathingRingProps {
   remainingFraction: number;
@@ -25,6 +26,7 @@ export const BreathingRing: React.FC<BreathingRingProps> = ({
   timeText,
   subtitle,
 }) => {
+  const colors = useColors();
   const breatheScale = useRef(new Animated.Value(1)).current;
   const completeScale = useRef(new Animated.Value(1)).current;
 
@@ -78,6 +80,44 @@ export const BreathingRing: React.FC<BreathingRingProps> = ({
 
   const animatedScale = isCompleted ? completeScale : breatheScale;
 
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      width: RING_SIZE + 40,
+      height: RING_SIZE + 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    ambientGlow: {
+      position: 'absolute',
+      width: RING_SIZE + 40,
+      height: RING_SIZE + 40,
+      borderRadius: (RING_SIZE + 40) / 2,
+    },
+    ringWrapper: {
+      width: RING_SIZE,
+      height: RING_SIZE,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    content: {
+      position: 'absolute',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    timeText: {
+      fontSize: 56,
+      fontWeight: '300',
+      color: colors.textPrimary,
+      fontVariant: ['tabular-nums'],
+    },
+    subtitle: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginTop: 8,
+      fontWeight: '500',
+    },
+  }), [colors]);
+
   return (
     <View style={styles.container}>
       {/* Ambient glow behind the ring */}
@@ -85,7 +125,7 @@ export const BreathingRing: React.FC<BreathingRingProps> = ({
         style={[
           styles.ambientGlow,
           {
-            backgroundColor: ringColor + '0D',
+            backgroundColor: withOpacity(ringColor, 0.05),
             ...(Platform.OS === 'ios'
               ? {
                   shadowColor: ringColor,
@@ -143,41 +183,3 @@ export const BreathingRing: React.FC<BreathingRingProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: RING_SIZE + 40,
-    height: RING_SIZE + 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  ambientGlow: {
-    position: 'absolute',
-    width: RING_SIZE + 40,
-    height: RING_SIZE + 40,
-    borderRadius: (RING_SIZE + 40) / 2,
-  },
-  ringWrapper: {
-    width: RING_SIZE,
-    height: RING_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  timeText: {
-    fontSize: 56,
-    fontWeight: '300',
-    color: colors.textPrimary,
-    fontVariant: ['tabular-nums'],
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
-    fontWeight: '500',
-  },
-});

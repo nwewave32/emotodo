@@ -3,14 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   RefreshControl,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTaskStore } from '../store/taskStore';
 import { useRecordStore } from '../store/recordStore';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { formatDisplayDate, getTodayString } from '../utils/date';
 import { messages } from '../constants/messages';
 import { DailyRecord, Task, TaskStatus } from '../types';
@@ -18,12 +17,12 @@ import { CalendarHeatmap, HeatmapDateInfo } from '../components/CalendarHeatmap'
 import { WeekSummary } from '../components/WeekSummary';
 
 const statusEmoji: Record<TaskStatus, string> = {
-  completed: '✓',
-  partial: '△',
-  postponed: '−',
+  completed: '\u2713',
+  partial: '\u25B3',
+  postponed: '\u2212',
 };
 
-const statusCardStyle: Record<TaskStatus, 'completedCard' | 'partialCard' | 'postponedCard'> = {
+const statusCardStyleKey: Record<TaskStatus, 'completedCard' | 'partialCard' | 'postponedCard'> = {
   completed: 'completedCard',
   partial: 'partialCard',
   postponed: 'postponedCard',
@@ -31,6 +30,7 @@ const statusCardStyle: Record<TaskStatus, 'completedCard' | 'partialCard' | 'pos
 
 export const HistoryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const { tasks, loadTasks, getTasksForDate } = useTaskStore();
   const { records, loadRecords, isLoading, getRecordsForDate } = useRecordStore();
 
@@ -147,10 +147,119 @@ export const HistoryScreen: React.FC = () => {
     return messages.reasons.find((r) => r.key === reasonKey)?.label || reasonKey;
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      padding: 20,
+    },
+    selectedDateSection: {
+      marginTop: 4,
+    },
+    selectedDateLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    noContentContainer: {
+      paddingVertical: 32,
+      alignItems: 'center',
+    },
+    noContentText: {
+      fontSize: 14,
+      color: colors.textLight,
+    },
+    recordCard: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 8,
+    },
+    completedCard: {
+      borderLeftWidth: 3,
+      borderLeftColor: colors.completed,
+    },
+    partialCard: {
+      borderLeftWidth: 3,
+      borderLeftColor: colors.partial,
+    },
+    postponedCard: {
+      borderLeftWidth: 3,
+      borderLeftColor: colors.postponed,
+    },
+    unrecordedCard: {
+      borderLeftWidth: 3,
+      borderLeftColor: colors.textLight,
+      backgroundColor: colors.background,
+    },
+    recordHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    taskTitle: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: colors.textPrimary,
+      flex: 1,
+    },
+    unrecordedTitle: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: colors.textLight,
+      flex: 1,
+    },
+    unrecordedBadge: {
+      fontSize: 16,
+      color: colors.textLight,
+    },
+    unrecordedLabel: {
+      fontSize: 13,
+      color: colors.textLight,
+    },
+    statusEmoji: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+    emotionText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    energyText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    reasonText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 4,
+      fontStyle: 'italic',
+    },
+    noteText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    timerInfo: {
+      fontSize: 12,
+      color: colors.textLight,
+      marginTop: 6,
+    },
+  }), [colors]);
+
   const renderRecord = (record: DailyRecord & { taskTitle: string }) => (
     <View
       key={record.id}
-      style={[styles.recordCard, styles[statusCardStyle[record.status]]]}
+      style={[styles.recordCard, styles[statusCardStyleKey[record.status]]]}
     >
       <View style={styles.recordHeader}>
         <Text style={styles.taskTitle}>{record.taskTitle}</Text>
@@ -246,114 +355,3 @@ export const HistoryScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  // Calendar date selection
-  selectedDateSection: {
-    marginTop: 4,
-  },
-  selectedDateLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  noContentContainer: {
-    paddingVertical: 32,
-    alignItems: 'center',
-  },
-  noContentText: {
-    fontSize: 14,
-    color: colors.textLight,
-  },
-  // Record cards
-  recordCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-  },
-  completedCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.completed,
-  },
-  partialCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.partial,
-  },
-  postponedCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.postponed,
-  },
-  unrecordedCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.textLight,
-    backgroundColor: colors.background,
-  },
-  recordHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  taskTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  unrecordedTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: colors.textLight,
-    flex: 1,
-  },
-  unrecordedBadge: {
-    fontSize: 16,
-    color: colors.textLight,
-  },
-  unrecordedLabel: {
-    fontSize: 13,
-    color: colors.textLight,
-  },
-  statusEmoji: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  emotionText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  energyText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  reasonText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  noteText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  timerInfo: {
-    fontSize: 12,
-    color: colors.textLight,
-    marginTop: 6,
-  },
-});

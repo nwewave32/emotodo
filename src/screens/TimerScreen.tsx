@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { BreathingRing } from '../components/BreathingRing';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { getRandomMessage, messages } from '../constants/messages';
 import { usePulse } from '../hooks/useAnimatedValue';
 import { useTaskStore } from '../store/taskStore';
@@ -24,6 +24,7 @@ type RouteProps = RouteProp<RootStackParamList, 'Timer'>;
 export const TimerScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const colors = useColors();
   const { taskId, minutes } = route.params;
   const { getTask } = useTaskStore();
 
@@ -117,6 +118,67 @@ export const TimerScreen: React.FC = () => {
     ? encouragement
     : undefined;
 
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+    },
+    taskTitle: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    ringContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    buttonContainer: {
+      paddingBottom: 40,
+      gap: 16,
+      alignItems: 'center',
+    },
+    button: {
+      width: '100%',
+      paddingVertical: 16,
+      paddingHorizontal: 10,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    pauseButton: {
+      backgroundColor: colors.timerPaused,
+    },
+    pauseButtonText: {
+      color: colors.textPrimary,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    resumeButton: {
+      backgroundColor: colors.primary,
+    },
+    completeButton: {
+      backgroundColor: colors.timerComplete,
+    },
+    completeButtonText: {
+      color: colors.white,
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    buttonText: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    stopLink: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      fontWeight: '500',
+      paddingVertical: 8,
+    },
+  }), [colors]);
+
   if (!task) {
     navigation.goBack();
     return null;
@@ -171,64 +233,3 @@ export const TimerScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  taskTitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  ringContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonContainer: {
-    paddingBottom: 40,
-    gap: 16,
-    alignItems: 'center',
-  },
-  button: {
-    width: '100%',
-    paddingVertical: 16,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  pauseButton: {
-    backgroundColor: colors.timerPaused,
-  },
-  pauseButtonText: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  resumeButton: {
-    backgroundColor: colors.primary,
-  },
-  completeButton: {
-    backgroundColor: colors.timerComplete,
-  },
-  completeButtonText: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  buttonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  stopLink: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    paddingVertical: 8,
-  },
-});

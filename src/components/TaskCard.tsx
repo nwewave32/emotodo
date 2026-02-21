@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,9 @@ import {
   UIManager,
 } from 'react-native';
 import { Task, DailyRecord, TaskStatus } from '../types';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { messages } from '../constants/messages';
-import { DIFFICULTY_CONFIG } from '../constants/difficulty';
+import { getDifficultyConfig } from '../constants/difficulty';
 import { GlowDot } from './GlowDot';
 import { QuickTimerButtons } from './QuickTimerButtons';
 
@@ -27,24 +27,6 @@ interface TaskCardProps {
   onPressEdit: () => void;
 }
 
-const statusBorderColors: Record<TaskStatus, string> = {
-  completed: colors.completed,
-  partial: colors.partial,
-  postponed: colors.postponed,
-};
-
-const emotionColorMap: Record<string, string> = {
-  happy: colors.emotionHappy,
-  relief: colors.emotionRelief,
-  tired: colors.emotionTired,
-  proud: colors.emotionProud,
-  anxious: colors.emotionAnxious,
-  neutral: colors.emotionNeutral,
-  okay: colors.emotionRelief,
-  busy: colors.emotionAnxious,
-  frustrated: colors.emotionAnxious,
-};
-
 const getEmotionEmoji = (emotionKey: string, status: TaskStatus): string => {
   const emotions = messages.emotions[status];
   return emotions?.find((e) => e.key === emotionKey)?.emoji || '';
@@ -57,9 +39,122 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onPressAction,
   onPressEdit,
 }) => {
+  const colors = useColors();
   const [expanded, setExpanded] = useState(false);
   const isRecorded = !!todayRecord;
   const status = todayRecord?.status;
+
+  const difficultyConfig = useMemo(() => getDifficultyConfig(colors), [colors]);
+
+  const statusBorderColors: Record<TaskStatus, string> = useMemo(() => ({
+    completed: colors.completed,
+    partial: colors.partial,
+    postponed: colors.postponed,
+  }), [colors]);
+
+  const emotionColorMap: Record<string, string> = useMemo(() => ({
+    happy: colors.emotionHappy,
+    relief: colors.emotionRelief,
+    tired: colors.emotionTired,
+    proud: colors.emotionProud,
+    anxious: colors.emotionAnxious,
+    neutral: colors.emotionNeutral,
+    okay: colors.emotionRelief,
+    busy: colors.emotionAnxious,
+    frustrated: colors.emotionAnxious,
+  }), [colors]);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      marginBottom: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.border,
+    },
+    collapsedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 28,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.textPrimary,
+      flex: 1,
+      marginRight: 12,
+    },
+    collapsedRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    timeHint: {
+      fontSize: 13,
+      color: colors.textLight,
+    },
+    expandedContent: {
+      marginTop: 14,
+      paddingTop: 14,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    timerSection: {
+      marginBottom: 14,
+    },
+    timerLabel: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 8,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    completeButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 12,
+      backgroundColor: colors.completed,
+      alignItems: 'center',
+    },
+    completeButtonText: {
+      color: colors.white,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    secondaryActions: {
+      flexDirection: 'row',
+      gap: 16,
+    },
+    textLink: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    recordSummary: {
+      gap: 4,
+      marginBottom: 8,
+    },
+    recordDetail: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    notePreview: {
+      fontSize: 13,
+      color: colors.textLight,
+      marginTop: 4,
+    },
+    editLink: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: '500',
+    },
+  }), [colors]);
 
   const handleToggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -69,7 +164,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const borderColor = isRecorded && status
     ? statusBorderColors[status]
     : task.difficulty
-      ? DIFFICULTY_CONFIG[task.difficulty].color
+      ? difficultyConfig[task.difficulty].color
       : colors.border;
 
   return (
@@ -153,95 +248,3 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.border,
-  },
-  collapsedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 28,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.textPrimary,
-    flex: 1,
-    marginRight: 12,
-  },
-  collapsedRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  timeHint: {
-    fontSize: 13,
-    color: colors.textLight,
-  },
-  expandedContent: {
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  timerSection: {
-    marginBottom: 14,
-  },
-  timerLabel: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  completeButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: colors.completed,
-    alignItems: 'center',
-  },
-  completeButtonText: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  secondaryActions: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  textLink: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  recordSummary: {
-    gap: 4,
-    marginBottom: 8,
-  },
-  recordDetail: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  notePreview: {
-    fontSize: 13,
-    color: colors.textLight,
-    marginTop: 4,
-  },
-  editLink: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-});

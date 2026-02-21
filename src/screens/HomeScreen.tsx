@@ -14,7 +14,7 @@ import { useTaskStore } from '../store/taskStore';
 import { useRecordStore } from '../store/recordStore';
 import { TaskCard } from '../components/TaskCard';
 import { GreetingHeader } from '../components/GreetingHeader';
-import { colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { progressMessages } from '../constants/messages';
 import { RootStackParamList, TaskStatus } from '../types';
 
@@ -23,14 +23,21 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const { tasks, loadTasks, isLoading: tasksLoading, getTodayTasks } = useTaskStore();
   const { records, loadRecords, getTodayRecord } = useRecordStore();
 
   const todayTasks = getTodayTasks();
 
-  const staggerAnims = useRef<Animated.Value[]>([]).current;
-  while (staggerAnims.length < todayTasks.length) {
-    staggerAnims.push(new Animated.Value(0));
+  const staggerAnims = useRef<Animated.Value[]>([]);
+  if (staggerAnims.current.length < todayTasks.length) {
+    staggerAnims.current = [
+      ...staggerAnims.current,
+      ...Array.from(
+        { length: todayTasks.length - staggerAnims.current.length },
+        () => new Animated.Value(0),
+      ),
+    ];
   }
 
   const progress = useMemo(() => {
@@ -57,7 +64,7 @@ export const HomeScreen: React.FC = () => {
 
   useEffect(() => {
     if (todayTasks.length > 0) {
-      const animations = staggerAnims
+      const animations = staggerAnims.current
         .slice(0, todayTasks.length)
         .map((anim) =>
           Animated.timing(anim, {
@@ -94,6 +101,27 @@ export const HomeScreen: React.FC = () => {
     });
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingBottom: 100,
+    },
+    emptyText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+    },
+  }), [colors]);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <GreetingHeader
@@ -113,7 +141,7 @@ export const HomeScreen: React.FC = () => {
           data={todayTasks}
           keyExtractor={(item) => item.id}
           renderItem={({ item, index }) => {
-            const anim = staggerAnims[index];
+            const anim = staggerAnims.current[index];
             return (
               <Animated.View
                 style={
@@ -155,24 +183,3 @@ export const HomeScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 100,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-});
