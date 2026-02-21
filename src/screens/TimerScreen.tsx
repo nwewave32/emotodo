@@ -1,25 +1,22 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
+  Alert,
+  Animated,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Vibration,
-  Alert,
+  View,
 } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useTaskStore } from '../store/taskStore';
+import { BreathingRing } from '../components/BreathingRing';
 import { colors } from '../constants/colors';
-import { messages, getRandomMessage } from '../constants/messages';
-import { formatTime } from '../utils/date';
+import { getRandomMessage, messages } from '../constants/messages';
+import { usePulse } from '../hooks/useAnimatedValue';
+import { useTaskStore } from '../store/taskStore';
 import { RootStackParamList } from '../types';
-
-const TIMER_SIZE = 250;
-const STROKE_WIDTH = 8;
-const RADIUS = (TIMER_SIZE - STROKE_WIDTH) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+import { formatTime } from '../utils/date';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Timer'>;
 type RouteProps = RouteProp<RootStackParamList, 'Timer'>;
@@ -40,8 +37,10 @@ export const TimerScreen: React.FC = () => {
 
   const encouragement = useMemo(
     () => getRandomMessage(messages.timer.encouragement),
-    [isPaused],
+    [isPaused]
   );
+
+  const ctaPulse = usePulse(0.95, 1.05, 1200);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -80,29 +79,25 @@ export const TimerScreen: React.FC = () => {
   };
 
   const handleStop = () => {
-    Alert.alert(
-      '타이머 종료',
-      '타이머를 종료할까요?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '종료',
-          onPress: () => {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-            }
-            const elapsedSeconds = totalSeconds - remainingSeconds;
-            const actualMinutes = Math.ceil(elapsedSeconds / 60);
-            navigation.replace('Record', {
-              taskId,
-              usedTimer: true,
-              timerCompleted: false,
-              actualMinutes,
-            });
-          },
+    Alert.alert('타이머 종료', '타이머를 종료할까요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '종료',
+        onPress: () => {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+          const elapsedSeconds = totalSeconds - remainingSeconds;
+          const elapsedMinutes = Math.ceil(elapsedSeconds / 60);
+          navigation.replace('Record', {
+            taskId,
+            usedTimer: true,
+            timerCompleted: false,
+            actualMinutes: elapsedMinutes,
+          });
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleComplete = () => {
@@ -115,13 +110,12 @@ export const TimerScreen: React.FC = () => {
   };
 
   const remainingFraction = remainingSeconds / totalSeconds;
-  const strokeDashoffset = CIRCUMFERENCE * (1 - remainingFraction);
 
-  const ringColor = isCompleted
-    ? colors.timerComplete
-    : isPaused
-      ? colors.timerPaused
-      : colors.timerActive;
+  const subtitle = isCompleted
+    ? messages.timer.completed
+    : !isPaused
+    ? encouragement
+    : undefined;
 
   if (!task) {
     navigation.goBack();
@@ -132,60 +126,27 @@ export const TimerScreen: React.FC = () => {
     <View style={styles.container}>
       <Text style={styles.taskTitle}>{task.title}</Text>
 
-      <View style={styles.timerContainer}>
-        <View style={styles.timerWrapper}>
-          <Svg
-            width={TIMER_SIZE}
-            height={TIMER_SIZE}
-            style={styles.progressRing}
-          >
-            <Circle
-              cx={TIMER_SIZE / 2}
-              cy={TIMER_SIZE / 2}
-              r={RADIUS}
-              stroke={colors.border}
-              strokeWidth={STROKE_WIDTH}
-              fill="none"
-            />
-            <Circle
-              cx={TIMER_SIZE / 2}
-              cy={TIMER_SIZE / 2}
-              r={RADIUS}
-              stroke={ringColor}
-              strokeWidth={STROKE_WIDTH}
-              fill="none"
-              strokeDasharray={CIRCUMFERENCE}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-              transform={`rotate(-90 ${TIMER_SIZE / 2} ${TIMER_SIZE / 2})`}
-            />
-          </Svg>
-          <View style={styles.timerContent}>
-            <Text style={styles.timerText}>
-              {formatTime(remainingSeconds)}
-            </Text>
-            {!isCompleted && (
-              <Text style={styles.encouragement}>
-                {encouragement}
-              </Text>
-            )}
-            {isCompleted && (
-              <Text style={styles.completedText}>
-                {messages.timer.completed}
-              </Text>
-            )}
-          </View>
-        </View>
+      <View style={styles.ringContainer}>
+        <BreathingRing
+          remainingFraction={remainingFraction}
+          isRunning={isRunning}
+          isPaused={isPaused}
+          isCompleted={isCompleted}
+          timeText={formatTime(remainingSeconds)}
+          subtitle={subtitle}
+        />
       </View>
 
       <View style={styles.buttonContainer}>
         {isCompleted ? (
-          <TouchableOpacity
-            style={[styles.button, styles.completeButton]}
-            onPress={handleComplete}
-          >
-            <Text style={styles.completeButtonText}>기록하러 가기</Text>
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: ctaPulse }] }}>
+            <TouchableOpacity
+              style={[styles.button, styles.completeButton]}
+              onPress={handleComplete}
+            >
+              <Text style={styles.completeButtonText}>기록하러 가기</Text>
+            </TouchableOpacity>
+          </Animated.View>
         ) : isPaused ? (
           <>
             <TouchableOpacity
@@ -194,28 +155,17 @@ export const TimerScreen: React.FC = () => {
             >
               <Text style={styles.buttonText}>{messages.buttons.resume}</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.stopButton]}
-              onPress={handleStop}
-            >
-              <Text style={styles.stopButtonText}>{messages.buttons.stop}</Text>
+            <TouchableOpacity onPress={handleStop}>
+              <Text style={styles.stopLink}>{messages.buttons.stop}</Text>
             </TouchableOpacity>
           </>
         ) : (
-          <>
-            <TouchableOpacity
-              style={[styles.button, styles.pauseButton]}
-              onPress={handlePause}
-            >
-              <Text style={styles.pauseButtonText}>{messages.buttons.pause}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.stopButton]}
-              onPress={handleStop}
-            >
-              <Text style={styles.stopButtonText}>{messages.buttons.stop}</Text>
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity
+            style={[styles.button, styles.pauseButton]}
+            onPress={handlePause}
+          >
+            <Text style={styles.pauseButtonText}>{messages.buttons.pause}</Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -227,56 +177,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 20,
   },
   taskTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 16,
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
   },
-  timerContainer: {
+  ringContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  timerWrapper: {
-    width: TIMER_SIZE,
-    height: TIMER_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressRing: {
-    position: 'absolute',
-  },
-  timerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  timerText: {
-    fontSize: 56,
-    fontWeight: '300',
-    color: colors.textPrimary,
-    fontVariant: ['tabular-nums'],
-  },
-  encouragement: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
-  },
-  completedText: {
-    fontSize: 14,
-    color: colors.timerComplete,
-    marginTop: 8,
-    fontWeight: '500',
-  },
   buttonContainer: {
     paddingBottom: 40,
-    gap: 12,
+    gap: 16,
+    alignItems: 'center',
   },
   button: {
+    width: '100%',
     paddingVertical: 16,
+    paddingHorizontal: 10,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -291,11 +212,6 @@ const styles = StyleSheet.create({
   resumeButton: {
     backgroundColor: colors.primary,
   },
-  stopButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
   completeButton: {
     backgroundColor: colors.timerComplete,
   },
@@ -309,9 +225,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  stopButtonText: {
+  stopLink: {
+    fontSize: 15,
     color: colors.textSecondary,
-    fontSize: 16,
     fontWeight: '500',
+    paddingVertical: 8,
   },
 });

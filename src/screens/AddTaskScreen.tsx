@@ -253,6 +253,7 @@ export const AddTaskScreen: React.FC = () => {
               minimumDate={new Date()}
               onChange={handleDateChange}
               locale="ko"
+              themeVariant="dark"
             />
             {Platform.OS === 'ios' && (
               <TouchableOpacity
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   input: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.cardElevated,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
@@ -412,7 +413,7 @@ const styles = StyleSheet.create({
   },
   dateDisplay: {
     flex: 1,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primaryMuted,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,

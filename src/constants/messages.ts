@@ -107,6 +107,19 @@ export const messages = {
   ],
 };
 
+export const wizard = {
+  statusQuestion: '어떻게 됐나요?',
+  emotionQuestion: '지금 기분이 어때요?',
+  energyQuestion: '오늘 에너지는 어때요?',
+  noteQuestion: '하고 싶은 말이 있나요?',
+};
+
+export const progressMessages = {
+  allDone: '오늘도 수고했어요!',
+  format: (done: number, total: number) => `${total}개 중 ${done}개 완료`,
+  emptyState: '오늘은 조용한 밤이에요',
+};
+
 export const getRandomMessage = (messages: string[]): string => {
   return messages[Math.floor(Math.random() * messages.length)];
 };

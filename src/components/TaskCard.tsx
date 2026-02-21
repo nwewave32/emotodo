@@ -1,243 +1,247 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Task, DailyRecord } from '../types';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
+import { Task, DailyRecord, TaskStatus } from '../types';
 import { colors } from '../constants/colors';
+import { messages } from '../constants/messages';
 import { DIFFICULTY_CONFIG } from '../constants/difficulty';
+import { GlowDot } from './GlowDot';
 import { QuickTimerButtons } from './QuickTimerButtons';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface TaskCardProps {
   task: Task;
   todayRecord?: DailyRecord;
   onPressTimer: (minutes: number) => void;
-  onPressComplete: () => void;
-  onPressPostponed: () => void;
-  onPressPartial: () => void;
+  onPressAction: (status: TaskStatus) => void;
   onPressEdit: () => void;
 }
 
-const statusBadgeConfig = {
-  completed: { label: '완료', style: 'completedBadge' as const },
-  partial: { label: '부분완료', style: 'partialBadge' as const },
-  postponed: { label: '미룸', style: 'postponedBadge' as const },
+const statusBorderColors: Record<TaskStatus, string> = {
+  completed: colors.completed,
+  partial: colors.partial,
+  postponed: colors.postponed,
 };
 
-const statusCardStyle = {
-  completed: 'completed' as const,
-  partial: 'partial' as const,
-  postponed: 'postponed' as const,
+const emotionColorMap: Record<string, string> = {
+  happy: colors.emotionHappy,
+  relief: colors.emotionRelief,
+  tired: colors.emotionTired,
+  proud: colors.emotionProud,
+  anxious: colors.emotionAnxious,
+  neutral: colors.emotionNeutral,
+  okay: colors.emotionRelief,
+  busy: colors.emotionAnxious,
+  frustrated: colors.emotionAnxious,
 };
 
+const getEmotionEmoji = (emotionKey: string, status: TaskStatus): string => {
+  const emotions = messages.emotions[status];
+  return emotions?.find((e) => e.key === emotionKey)?.emoji || '';
+};
 
 export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   todayRecord,
   onPressTimer,
-  onPressComplete,
-  onPressPostponed,
-  onPressPartial,
+  onPressAction,
   onPressEdit,
 }) => {
+  const [expanded, setExpanded] = useState(false);
   const isRecorded = !!todayRecord;
   const status = todayRecord?.status;
 
-  const Wrapper = isRecorded ? TouchableOpacity : View;
-  const wrapperProps = isRecorded
-    ? { onPress: onPressEdit, activeOpacity: 0.7 }
-    : {};
+  const handleToggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded(!expanded);
+  };
+
+  const borderColor = isRecorded && status
+    ? statusBorderColors[status]
+    : task.difficulty
+      ? DIFFICULTY_CONFIG[task.difficulty].color
+      : colors.border;
 
   return (
-    <Wrapper
-      style={[
-        styles.container,
-        isRecorded && status && styles[statusCardStyle[status]],
-      ]}
-      {...wrapperProps}
+    <TouchableOpacity
+      style={[styles.container, { borderLeftColor: borderColor }]}
+      onPress={handleToggle}
+      activeOpacity={0.7}
     >
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>{task.title}</Text>
-          {task.difficulty && (
-            <View
-              style={[
-                styles.difficultyBadge,
-                { backgroundColor: DIFFICULTY_CONFIG[task.difficulty].bgColor },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.difficultyText,
-                  { color: DIFFICULTY_CONFIG[task.difficulty].color },
-                ]}
-              >
-                {DIFFICULTY_CONFIG[task.difficulty].label}
-              </Text>
-            </View>
+      {/* Collapsed: single row */}
+      <View style={styles.collapsedRow}>
+        <Text style={styles.title} numberOfLines={1}>
+          {task.title}
+        </Text>
+        <View style={styles.collapsedRight}>
+          {isRecorded && todayRecord?.emotion && (
+            <GlowDot
+              color={emotionColorMap[todayRecord.emotion] || colors.primary}
+              size={10}
+            />
+          )}
+          {!isRecorded && (
+            <Text style={styles.timeHint}>{task.estimatedMinutes}분</Text>
           )}
         </View>
-        {isRecorded && status && (
-          <View
-            style={[
-              styles.statusBadge,
-              styles[statusBadgeConfig[status].style],
-            ]}
-          >
-            <Text style={styles.statusText}>
-              {statusBadgeConfig[status].label}
-            </Text>
-          </View>
-        )}
       </View>
 
-      {!isRecorded && (
-        <>
+      {/* Expanded content */}
+      {expanded && !isRecorded && (
+        <View style={styles.expandedContent}>
           <View style={styles.timerSection}>
-            <Text style={styles.timerLabel}>타이머로 시작하기</Text>
+            <Text style={styles.timerLabel}>타이머로 시작</Text>
             <QuickTimerButtons onSelectMinutes={onPressTimer} />
           </View>
-
-          <View style={styles.actionButtons}>
+          <View style={styles.actionRow}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.completeButton]}
-              onPress={onPressComplete}
-              accessibilityRole="button"
-              accessibilityLabel={`${task.title} 완료`}
+              style={styles.completeButton}
+              onPress={() => onPressAction('completed')}
             >
               <Text style={styles.completeButtonText}>완료</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.partialButton]}
-              onPress={onPressPartial}
-              accessibilityRole="button"
-              accessibilityLabel={`${task.title} 부분완료`}
-            >
-              <Text style={styles.partialButtonText}>부분완료</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.postponedButton]}
-              onPress={onPressPostponed}
-              accessibilityRole="button"
-              accessibilityLabel={`${task.title} 미룸`}
-            >
-              <Text style={styles.postponedButtonText}>미룸</Text>
-            </TouchableOpacity>
+            <View style={styles.secondaryActions}>
+              <TouchableOpacity onPress={() => onPressAction('partial')}>
+                <Text style={styles.textLink}>부분완료</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => onPressAction('postponed')}>
+                <Text style={styles.textLink}>미룸</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </>
+        </View>
       )}
-    </Wrapper>
+
+      {expanded && isRecorded && todayRecord && (
+        <View style={styles.expandedContent}>
+          <View style={styles.recordSummary}>
+            {todayRecord.emotion && (
+              <Text style={styles.recordDetail}>
+                {getEmotionEmoji(todayRecord.emotion, todayRecord.status)}{' '}
+                {messages.emotions[todayRecord.status]?.find(
+                  (e) => e.key === todayRecord.emotion,
+                )?.label}
+              </Text>
+            )}
+            {todayRecord.energyLevel != null && (
+              <Text style={styles.recordDetail}>
+                {messages.energyLevels[todayRecord.energyLevel - 1]?.emoji}{' '}
+                에너지 {messages.energyLevels[todayRecord.energyLevel - 1]?.label}
+              </Text>
+            )}
+            {todayRecord.note && (
+              <Text style={styles.notePreview} numberOfLines={2}>
+                {todayRecord.note}
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity onPress={onPressEdit}>
+            <Text style={styles.editLink}>수정</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.border,
   },
-  completed: {
-    backgroundColor: colors.completed,
-  },
-  partial: {
-    backgroundColor: colors.partial,
-  },
-  postponed: {
-    backgroundColor: colors.incomplete,
-  },
-  header: {
+  collapsedRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 8,
+    minHeight: 28,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    flexShrink: 1,
-  },
-  difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  difficultyText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  completedBadge: {
-    backgroundColor: 'rgba(107, 157, 252, 0.2)',
-  },
-  partialBadge: {
-    backgroundColor: 'rgba(150, 130, 200, 0.2)',
-  },
-  postponedBadge: {
-    backgroundColor: 'rgba(113, 128, 150, 0.2)',
-  },
-  statusText: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '500',
-    color: colors.textSecondary,
+    color: colors.textPrimary,
+    flex: 1,
+    marginRight: 12,
+  },
+  collapsedRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeHint: {
+    fontSize: 13,
+    color: colors.textLight,
+  },
+  expandedContent: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   timerSection: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   timerLabel: {
     fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 8,
   },
-  actionButtons: {
+  actionRow: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 12,
   },
-  actionButton: {
+  completeButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
+    backgroundColor: colors.completed,
     alignItems: 'center',
-  },
-  completeButton: {
-    backgroundColor: colors.primary,
-  },
-  partialButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  postponedButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   completeButtonText: {
     color: colors.white,
     fontSize: 15,
     fontWeight: '600',
   },
-  partialButtonText: {
-    color: colors.primary,
-    fontSize: 15,
+  secondaryActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  textLink: {
+    fontSize: 14,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
-  postponedButtonText: {
+  recordSummary: {
+    gap: 4,
+    marginBottom: 8,
+  },
+  recordDetail: {
+    fontSize: 14,
     color: colors.textSecondary,
-    fontSize: 15,
+  },
+  notePreview: {
+    fontSize: 13,
+    color: colors.textLight,
+    marginTop: 4,
+  },
+  editLink: {
+    fontSize: 14,
+    color: colors.primary,
     fontWeight: '500',
   },
 });

@@ -3,26 +3,29 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
 import { getCalendarDays, getMonthLabel, getTodayString, DAY_LABELS } from '../utils/date';
 
-export type DateStatus = 'completed' | 'partial' | 'postponed' | 'mixed';
+export interface HeatmapDateInfo {
+  status: 'completed' | 'partial' | 'postponed' | 'mixed';
+  dominantEmotion?: string;
+}
 
-interface CalendarProps {
+interface CalendarHeatmapProps {
   year: number;
   month: number;
   selectedDate: string | null;
-  recordDates: Map<string, DateStatus>;
+  recordDates: Map<string, HeatmapDateInfo>;
   onSelectDate: (date: string) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
 }
 
-const dotColors: Record<DateStatus, string> = {
-  completed: colors.primary,
-  partial: colors.partial,
-  postponed: colors.textLight,
-  mixed: colors.partial,
+const heatmapColors: Record<string, string> = {
+  completed: colors.heatmapCompleted,
+  partial: colors.heatmapPartial,
+  postponed: colors.heatmapPostponed,
+  mixed: colors.heatmapMixed,
 };
 
-export const Calendar: React.FC<CalendarProps> = ({
+export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
   year,
   month,
   selectedDate,
@@ -43,15 +46,16 @@ export const Calendar: React.FC<CalendarProps> = ({
     const dayNumber = parseInt(dateStr.split('-')[2], 10);
     const isToday = dateStr === today;
     const isSelected = dateStr === selectedDate;
-    const status = recordDates.get(dateStr);
+    const dateInfo = recordDates.get(dateStr);
+    const cellBg = dateInfo ? heatmapColors[dateInfo.status] : undefined;
 
     return (
       <TouchableOpacity
         key={dateStr}
         style={[
           styles.dayCell,
+          cellBg ? { backgroundColor: cellBg } : undefined,
           isToday && styles.todayCell,
-          isSelected && styles.selectedCell,
         ]}
         onPress={() => onSelectDate(dateStr)}
         activeOpacity={0.6}
@@ -60,16 +64,11 @@ export const Calendar: React.FC<CalendarProps> = ({
           style={[
             styles.dayText,
             isToday && styles.todayText,
-            isSelected && styles.selectedText,
           ]}
         >
           {dayNumber}
         </Text>
-        {status && (
-          <View
-            style={[styles.dot, { backgroundColor: dotColors[status] }]}
-          />
-        )}
+        {isSelected && <View style={styles.selectedUnderline} />}
       </TouchableOpacity>
     );
   };
@@ -128,7 +127,7 @@ const styles = StyleSheet.create({
   },
   navText: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
   monthLabel: {
     fontSize: 16,
@@ -158,33 +157,28 @@ const styles = StyleSheet.create({
     width: '14.28%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    minHeight: 40,
+    paddingVertical: 8,
+    minHeight: 48,
+    borderRadius: 8,
   },
   dayText: {
     fontSize: 14,
     color: colors.textPrimary,
   },
   todayCell: {
-    borderRadius: 20,
-    backgroundColor: colors.primaryLight,
+    borderWidth: 1.5,
+    borderColor: colors.primary + '4D',
+    borderRadius: 8,
   },
   todayText: {
     fontWeight: '700',
     color: colors.primary,
   },
-  selectedCell: {
-    borderRadius: 20,
+  selectedUnderline: {
+    width: 16,
+    height: 2,
+    borderRadius: 1,
     backgroundColor: colors.primary,
-  },
-  selectedText: {
-    color: colors.white,
-    fontWeight: '700',
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    marginTop: 2,
+    marginTop: 3,
   },
 });

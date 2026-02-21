@@ -74,12 +74,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.cardElevated,
     borderWidth: 1,
     borderColor: colors.border,
   },
   reasonButtonSelected: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primaryMuted,
     borderColor: colors.primary,
   },
   reasonLabel: {
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   reasonNoteInput: {
     marginTop: 12,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.cardElevated,
     borderRadius: 12,
     padding: 14,
     fontSize: 14,

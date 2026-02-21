@@ -1,12 +1,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
 import { HomeScreen } from '../screens/HomeScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { AddTaskScreen } from '../screens/AddTaskScreen';
 import { TimerScreen } from '../screens/TimerScreen';
 import { RecordScreen } from '../screens/RecordScreen';
+import { ChecklistIcon } from '../components/icons/ChecklistIcon';
+import { CalendarIcon } from '../components/icons/CalendarIcon';
 import { colors } from '../constants/colors';
 import { RootStackParamList, MainTabParamList } from '../types';
 
@@ -39,7 +40,7 @@ const MainTabs: React.FC = () => {
         options={{
           tabBarLabel: '오늘',
           tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 20 }}>📋</Text>
+            <ChecklistIcon color={color} size={22} />
           ),
         }}
       />
@@ -49,7 +50,7 @@ const MainTabs: React.FC = () => {
         options={{
           tabBarLabel: '기록',
           tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 20 }}>📊</Text>
+            <CalendarIcon color={color} size={22} />
           ),
         }}
       />

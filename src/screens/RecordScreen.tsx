@@ -1,44 +1,63 @@
-import React, { useState, useMemo } from 'react';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useRef, useState } from 'react';
 import {
-  View,
+  Alert,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useTaskStore } from '../store/taskStore';
-import { useRecordStore } from '../store/recordStore';
-import { EmotionPicker } from '../components/EmotionPicker';
+import { EmotionOrb } from '../components/EmotionOrb';
+import { EnergySlider } from '../components/EnergySlider';
+import { GlowDot } from '../components/GlowDot';
 import { ReasonPicker } from '../components/ReasonPicker';
-import { EnergyLevelPicker } from '../components/EnergyLevelPicker';
 import { colors } from '../constants/colors';
-import { messages, getRandomMessage } from '../constants/messages';
-import { getTodayString } from '../utils/date';
+import { messages, wizard } from '../constants/messages';
+import { useRecordStore } from '../store/recordStore';
+import { useTaskStore } from '../store/taskStore';
 import { RootStackParamList, TaskStatus } from '../types';
+import { getTodayString } from '../utils/date';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Record'>;
 type RouteProps = RouteProp<RootStackParamList, 'Record'>;
 
-const statusLabels: Record<TaskStatus, string> = {
-  completed: '완료',
-  partial: '부분완료',
-  postponed: '미룸',
-};
+const statusConfig: Array<{
+  status: TaskStatus;
+  label: string;
+  color: string;
+}> = [
+  { status: 'completed', label: '완료했어요', color: colors.completed },
+  { status: 'partial', label: '조금 했어요', color: colors.partial },
+  { status: 'postponed', label: '미뤘어요', color: colors.postponed },
+];
 
-const allStatuses: TaskStatus[] = ['completed', 'partial', 'postponed'];
+const STEP_COLORS = [
+  colors.textLight,
+  colors.primary,
+  colors.primary,
+  colors.primary,
+];
+const AUTO_ADVANCE_DELAY = 400;
 
 export const RecordScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
-  const { taskId, usedTimer, timerCompleted, actualMinutes, initialStatus, recordId } = route.params;
+  const {
+    taskId,
+    usedTimer,
+    timerCompleted,
+    actualMinutes,
+    initialStatus,
+    recordId,
+  } = route.params;
 
   const { getTask } = useTaskStore();
   const { addRecord, updateRecord, getRecord } = useRecordStore();
@@ -56,24 +75,69 @@ export const RecordScreen: React.FC = () => {
     return null;
   };
 
-  const [status, setStatus] = useState<TaskStatus | null>(getInitialStatus);
-  const [emotion, setEmotion] = useState<string | null>(existingRecord?.emotion ?? null);
-  const [reason, setReason] = useState<string | null>(existingRecord?.reason ?? null);
-  const [reasonNote, setReasonNote] = useState(existingRecord?.reasonNote ?? '');
-  const [energyLevel, setEnergyLevel] = useState<number | null>(existingRecord?.energyLevel ?? null);
-  const [note, setNote] = useState(existingRecord?.note ?? '');
+  const hasInitialStatus = getInitialStatus() !== null;
 
-  // 메시지가 타이핑마다 바뀌지 않도록 고정
-  const statusMessage = useMemo(() => {
-    if (status === 'completed') {
-      return getRandomMessage(messages.completionMessages);
-    } else if (status === 'postponed') {
-      return getRandomMessage(messages.postponedMessages);
-    } else if (status === 'partial') {
-      return getRandomMessage(messages.partialMessages);
+  const [status, setStatus] = useState<TaskStatus | null>(getInitialStatus);
+  const [emotion, setEmotion] = useState<string | null>(
+    existingRecord?.emotion ?? null
+  );
+  const [reason, setReason] = useState<string | null>(
+    existingRecord?.reason ?? null
+  );
+  const [reasonNote, setReasonNote] = useState(
+    existingRecord?.reasonNote ?? ''
+  );
+  const [energyLevel, setEnergyLevel] = useState<number | null>(
+    existingRecord?.energyLevel ?? null
+  );
+  const [note, setNote] = useState(existingRecord?.note ?? '');
+  const [step, setStep] = useState(hasInitialStatus ? 1 : 0);
+
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const canSave = status !== null && emotion !== null && energyLevel !== null;
+
+  const totalSteps = status === 'postponed' ? 4 : 4;
+
+  const crossFade = (nextStep: number) => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 125,
+      useNativeDriver: true,
+    }).start(() => {
+      setStep(nextStep);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 125,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
+  const handleStatusSelect = (s: TaskStatus) => {
+    setStatus(s);
+    setEmotion(null);
+    setReason(null);
+    setReasonNote('');
+    setEnergyLevel(null);
+    setTimeout(() => crossFade(1), AUTO_ADVANCE_DELAY);
+  };
+
+  const handleEmotionSelect = (e: string) => {
+    setEmotion(e);
+    setTimeout(() => crossFade(2), AUTO_ADVANCE_DELAY);
+  };
+
+  const handleEnergySelect = (level: number) => {
+    setEnergyLevel(level);
+    setTimeout(() => crossFade(3), AUTO_ADVANCE_DELAY);
+  };
+
+  const handleBack = () => {
+    if (step > 0) {
+      crossFade(step - 1);
     }
-    return '';
-  }, [status]);
+  };
 
   const handleSave = async () => {
     if (status === null) return;
@@ -81,8 +145,9 @@ export const RecordScreen: React.FC = () => {
     const recordData = {
       status,
       emotion: emotion ?? undefined,
-      reason: status === 'postponed' ? (reason ?? undefined) : undefined,
-      reasonNote: status === 'postponed' ? (reasonNote.trim() || undefined) : undefined,
+      reason: status === 'postponed' ? reason ?? undefined : undefined,
+      reasonNote:
+        status === 'postponed' ? reasonNote.trim() || undefined : undefined,
       energyLevel: energyLevel ?? undefined,
       note: note.trim() || undefined,
     };
@@ -102,90 +167,87 @@ export const RecordScreen: React.FC = () => {
       }
       navigation.popToTop();
     } catch {
-      Alert.alert('저장 실패', '기록을 저장하는 중 문제가 발생했어요. 다시 시도해주세요.');
+      Alert.alert(
+        '저장 실패',
+        '기록을 저장하는 중 문제가 발생했어요. 다시 시도해주세요.'
+      );
     }
   };
-
-  const canSave = status !== null && emotion !== null && energyLevel !== null;
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.taskTitle}>{task?.title}</Text>
+      {/* Progress dots */}
+      <View style={styles.progressDots}>
+        {Array.from({ length: totalSteps }).map((_, i) => (
+          <GlowDot
+            key={i}
+            color={i <= step ? colors.primary : colors.textLight}
+            size={i === step ? 10 : 6}
+          />
+        ))}
+      </View>
 
-        {status === null && (
-          <View style={styles.completionButtons}>
-            <TouchableOpacity
-              style={[styles.completionButton, styles.completeButton]}
-              onPress={() => setStatus('completed')}
-            >
-              <Text style={styles.completeButtonText}>
-                {messages.buttons.complete}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.completionButton, styles.partialButton]}
-              onPress={() => setStatus('partial')}
-            >
-              <Text style={styles.partialButtonText}>
-                {messages.buttons.partial}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.completionButton, styles.postponedButton]}
-              onPress={() => setStatus('postponed')}
-            >
-              <Text style={styles.postponedButtonText}>
-                {messages.buttons.postponed}
-              </Text>
-            </TouchableOpacity>
+      {/* Back button */}
+      {step > 0 && (
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Text style={styles.backText}>◀ 뒤로</Text>
+        </TouchableOpacity>
+      )}
+
+      <Animated.View style={[styles.stepContainer, { opacity: fadeAnim }]}>
+        {/* Step 0: Status selection */}
+        {step === 0 && (
+          <View style={styles.stepContent}>
+            <Text style={styles.question}>{wizard.statusQuestion}</Text>
+            <View style={styles.statusCards}>
+              {statusConfig.map(({ status: s, label, color }) => (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.statusCard, { borderColor: color }]}
+                  onPress={() => handleStatusSelect(s)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.statusLabel, { color }]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
-        {status !== null && (
-          <>
-            <View style={styles.statusBanner}>
-              <Text style={styles.statusText}>{statusMessage}</Text>
-              <View style={styles.statusToggleGroup}>
-                {allStatuses
-                  .filter((s) => s !== status)
-                  .map((s) => (
-                    <TouchableOpacity
-                      key={s}
-                      style={styles.statusToggle}
-                      onPress={() => {
-                        setStatus(s);
-                        setEmotion(null);
-                        setReason(null);
-                        setReasonNote('');
-                        setEnergyLevel(null);
-                      }}
-                    >
-                      <Text style={styles.statusToggleText}>
-                        {statusLabels[s]}으로 변경
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-              </View>
-            </View>
-
-            <EmotionPicker
+        {/* Step 1: Emotion */}
+        {step === 1 && status && (
+          <View style={styles.stepContent}>
+            <Text style={styles.question}>{wizard.emotionQuestion}</Text>
+            <EmotionOrb
               status={status}
               selectedEmotion={emotion}
-              onSelect={setEmotion}
+              onSelect={handleEmotionSelect}
             />
+          </View>
+        )}
 
-            <EnergyLevelPicker
+        {/* Step 2: Energy */}
+        {step === 2 && (
+          <View style={styles.stepContent}>
+            <Text style={styles.question}>{wizard.energyQuestion}</Text>
+            <EnergySlider
               selectedLevel={energyLevel}
-              onSelect={setEnergyLevel}
+              onSelect={handleEnergySelect}
             />
+          </View>
+        )}
+
+        {/* Step 3: Note + Reason */}
+        {step === 3 && (
+          <ScrollView
+            style={styles.scrollStep}
+            contentContainerStyle={styles.scrollStepContent}
+            keyboardShouldPersistTaps='handled'
+          >
+            <Text style={styles.question}>{wizard.noteQuestion}</Text>
 
             {status === 'postponed' && (
               <ReasonPicker
@@ -196,34 +258,29 @@ export const RecordScreen: React.FC = () => {
               />
             )}
 
-            <View style={styles.noteSection}>
-              <Text style={styles.noteLabel}>
-                {messages.questions.anyThoughts}
-              </Text>
-              <TextInput
-                style={styles.noteInput}
-                value={note}
-                onChangeText={setNote}
-                placeholder={messages.placeholders.note}
-                placeholderTextColor={colors.textLight}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-          </>
-        )}
-      </ScrollView>
+            <TextInput
+              style={styles.noteInput}
+              value={note}
+              onChangeText={setNote}
+              placeholder={messages.placeholders.note}
+              placeholderTextColor={colors.textLight}
+              multiline
+              numberOfLines={3}
+              textAlignVertical='top'
+            />
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom || 20 }]}>
-        <TouchableOpacity
-          style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={!canSave}
-        >
-          <Text style={styles.saveButtonText}>{messages.buttons.save}</Text>
-        </TouchableOpacity>
-      </View>
+            <TouchableOpacity
+              style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={!canSave}
+            >
+              <Text style={styles.saveButtonText}>{messages.buttons.save}</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
+      </Animated.View>
+
+      <View style={{ height: insets.bottom || 20 }} />
     </KeyboardAvoidingView>
   );
 };
@@ -233,96 +290,62 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollView: {
+  progressDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  backButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  backText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  stepContainer: {
     flex: 1,
   },
-  content: {
-    padding: 20,
-    paddingBottom: 100,
+  stepContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  taskTitle: {
+  question: {
     fontSize: 22,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 24,
+    textAlign: 'center',
+    marginBottom: 32,
   },
-  completionButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 24,
+  statusCards: {
+    width: '100%',
+    gap: 12,
   },
-  completionButton: {
-    flex: 1,
-    paddingVertical: 20,
+  statusCard: {
+    paddingVertical: 24,
     borderRadius: 16,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1.5,
     alignItems: 'center',
   },
-  completeButton: {
-    backgroundColor: colors.primary,
-  },
-  partialButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  postponedButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  completeButtonText: {
-    color: colors.white,
+  statusLabel: {
     fontSize: 18,
     fontWeight: '600',
   },
-  partialButtonText: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '500',
+  scrollStep: {
+    flex: 1,
   },
-  postponedButtonText: {
-    color: colors.textSecondary,
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  statusBanner: {
-    backgroundColor: colors.primaryLight,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  statusText: {
-    fontSize: 15,
-    color: colors.primary,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  statusToggleGroup: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statusToggle: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-  },
-  statusToggleText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  noteSection: {
-    marginBottom: 24,
-  },
-  noteLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 12,
+  scrollStepContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   noteInput: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.cardElevated,
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
@@ -330,17 +353,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     minHeight: 100,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.background,
-    padding: 20,
-    paddingBottom: 36,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    marginBottom: 24,
   },
   saveButton: {
     backgroundColor: colors.primary,

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
@@ -15,13 +14,8 @@ import { colors } from '../constants/colors';
 import { formatDisplayDate, getTodayString } from '../utils/date';
 import { messages } from '../constants/messages';
 import { DailyRecord, Task, TaskStatus } from '../types';
-import { Calendar, DateStatus } from '../components/Calendar';
-
-interface GroupedRecord {
-  date: string;
-  displayDate: string;
-  records: (DailyRecord & { taskTitle: string })[];
-}
+import { CalendarHeatmap, HeatmapDateInfo } from '../components/CalendarHeatmap';
+import { WeekSummary } from '../components/WeekSummary';
 
 const statusEmoji: Record<TaskStatus, string> = {
   completed: '✓',
@@ -39,11 +33,9 @@ export const HistoryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { tasks, loadTasks, getTasksForDate } = useTaskStore();
   const { records, loadRecords, isLoading, getRecordsForDate } = useRecordStore();
-  const [groupedRecords, setGroupedRecords] = useState<GroupedRecord[]>([]);
 
   const today = getTodayString();
   const [selectedDate, setSelectedDate] = useState<string | null>(today);
-  const [showAllRecords, setShowAllRecords] = useState(false);
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
 
@@ -52,60 +44,54 @@ export const HistoryScreen: React.FC = () => {
     loadRecords();
   }, []);
 
-  useEffect(() => {
-    const taskMap = new Map(tasks.map((t) => [t.id, t.title]));
-    const recordsWithTitle = records.map((r) => ({
-      ...r,
-      taskTitle: taskMap.get(r.taskId) || '삭제된 할 일',
-    }));
-
-    const groups: { [key: string]: (DailyRecord & { taskTitle: string })[] } = {};
-    recordsWithTitle.forEach((record) => {
-      if (!groups[record.date]) {
-        groups[record.date] = [];
-      }
-      groups[record.date].push(record);
-    });
-
-    const sortedGroups = Object.entries(groups)
-      .map(([date, recs]) => ({
-        date,
-        displayDate: formatDisplayDate(date),
-        records: recs.sort(
-          (a, b) =>
-            new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
-        ),
-      }))
-      .sort((a, b) => b.date.localeCompare(a.date));
-
-    setGroupedRecords(sortedGroups);
-  }, [records, tasks]);
-
   const recordDates = useMemo(() => {
-    const map = new Map<string, DateStatus>();
-    const dateGroups = new Map<string, Set<TaskStatus>>();
+    const map = new Map<string, HeatmapDateInfo>();
+    const dateGroups = new Map<string, { statuses: Set<TaskStatus>; emotions: Map<string, number> }>();
 
     records.forEach((r) => {
       if (!dateGroups.has(r.date)) {
-        dateGroups.set(r.date, new Set());
+        dateGroups.set(r.date, { statuses: new Set(), emotions: new Map() });
       }
-      dateGroups.get(r.date)?.add(r.status);
+      const group = dateGroups.get(r.date)!;
+      group.statuses.add(r.status);
+      if (r.emotion) {
+        group.emotions.set(r.emotion, (group.emotions.get(r.emotion) || 0) + 1);
+      }
     });
 
-    dateGroups.forEach((statuses, date) => {
+    dateGroups.forEach(({ statuses, emotions }, date) => {
+      let status: HeatmapDateInfo['status'];
       if (statuses.size > 1) {
-        map.set(date, 'mixed');
+        status = 'mixed';
       } else if (statuses.has('completed')) {
-        map.set(date, 'completed');
+        status = 'completed';
       } else if (statuses.has('partial')) {
-        map.set(date, 'partial');
+        status = 'partial';
       } else {
-        map.set(date, 'postponed');
+        status = 'postponed';
       }
+
+      let dominantEmotion: string | undefined;
+      if (emotions.size > 0) {
+        let maxCount = 0;
+        emotions.forEach((count, key) => {
+          if (count > maxCount) {
+            maxCount = count;
+            dominantEmotion = key;
+          }
+        });
+      }
+
+      map.set(date, { status, dominantEmotion });
     });
 
     return map;
   }, [records]);
+
+  const weekRecords = useMemo(
+    () => records.map((r) => ({ date: r.date, status: r.status })),
+    [records],
+  );
 
   const selectedDateData = useMemo(() => {
     if (!selectedDate) return null;
@@ -129,7 +115,7 @@ export const HistoryScreen: React.FC = () => {
     try {
       await Promise.all([loadTasks(), loadRecords()]);
     } catch {
-      // Store already handles loading state reset on error
+      // Store handles loading state reset on error
     }
   };
 
@@ -151,54 +137,30 @@ export const HistoryScreen: React.FC = () => {
     }
   };
 
-  const handleSelectDate = (date: string) => {
-    setSelectedDate(date);
-    setShowAllRecords(false);
-  };
-
-  const handleShowAll = () => {
-    setShowAllRecords(true);
-    setSelectedDate(null);
-  };
-
-  const handleBackToCalendar = () => {
-    setShowAllRecords(false);
-    setSelectedDate(today);
-  };
-
   const getEmotionEmoji = (emotionKey: string, status: TaskStatus): string => {
     const emotions = messages.emotions[status];
     if (!emotions) return '';
-    const emotion = emotions.find((e) => e.key === emotionKey);
-    return emotion?.emoji || '';
+    return emotions.find((e) => e.key === emotionKey)?.emoji || '';
   };
 
   const getReasonLabel = (reasonKey: string): string => {
-    const reason = messages.reasons.find((r) => r.key === reasonKey);
-    return reason?.label || reasonKey;
+    return messages.reasons.find((r) => r.key === reasonKey)?.label || reasonKey;
   };
 
   const renderRecord = (record: DailyRecord & { taskTitle: string }) => (
     <View
       key={record.id}
-      style={[
-        styles.recordCard,
-        styles[statusCardStyle[record.status]],
-      ]}
+      style={[styles.recordCard, styles[statusCardStyle[record.status]]]}
     >
       <View style={styles.recordHeader}>
         <Text style={styles.taskTitle}>{record.taskTitle}</Text>
-        <Text style={styles.statusEmoji}>
-          {statusEmoji[record.status]}
-        </Text>
+        <Text style={styles.statusEmoji}>{statusEmoji[record.status]}</Text>
       </View>
 
       {record.emotion && (
         <Text style={styles.emotionText}>
           {getEmotionEmoji(record.emotion, record.status)}{' '}
-          {messages.emotions[record.status]?.find(
-            (e) => e.key === record.emotion
-          )?.label || record.emotion}
+          {messages.emotions[record.status]?.find((e) => e.key === record.emotion)?.label || record.emotion}
         </Text>
       )}
 
@@ -211,10 +173,6 @@ export const HistoryScreen: React.FC = () => {
 
       {record.status === 'postponed' && record.reason && (
         <Text style={styles.reasonText}>{getReasonLabel(record.reason)}</Text>
-      )}
-
-      {record.status === 'postponed' && record.reasonNote && (
-        <Text style={styles.reasonNoteText}>{record.reasonNote}</Text>
       )}
 
       {record.note && <Text style={styles.noteText}>{record.note}</Text>}
@@ -237,13 +195,6 @@ export const HistoryScreen: React.FC = () => {
     </View>
   );
 
-  const renderDateGroup = ({ item }: { item: GroupedRecord }) => (
-    <View style={styles.dateGroup}>
-      <Text style={styles.dateHeader}>{item.displayDate}</Text>
-      {item.records.map(renderRecord)}
-    </View>
-  );
-
   const renderSelectedDateView = () => {
     if (!selectedDate || !selectedDateData) return null;
 
@@ -252,14 +203,9 @@ export const HistoryScreen: React.FC = () => {
 
     return (
       <View style={styles.selectedDateSection}>
-        <View style={styles.selectedDateHeader}>
-          <Text style={styles.selectedDateLabel}>
-            {formatDisplayDate(selectedDate)}
-          </Text>
-          <TouchableOpacity onPress={handleShowAll}>
-            <Text style={styles.showAllButton}>전체 보기</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.selectedDateLabel}>
+          {formatDisplayDate(selectedDate)}
+        </Text>
 
         {!hasContent ? (
           <View style={styles.noContentContainer}>
@@ -275,38 +221,6 @@ export const HistoryScreen: React.FC = () => {
     );
   };
 
-  if (showAllRecords) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.allRecordsHeader}>
-          <TouchableOpacity onPress={handleBackToCalendar}>
-            <Text style={styles.backButton}>◀ 달력</Text>
-          </TouchableOpacity>
-          <Text style={styles.allRecordsTitle}>전체 기록</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-        {groupedRecords.length === 0 ? (
-          <View style={styles.emptyInner}>
-            <Text style={styles.emptyText}>아직 기록이 없어요</Text>
-            <Text style={styles.emptySubtext}>
-              할 일을 완료하거나 기록하면{'\n'}여기에 나타나요
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={groupedRecords}
-            keyExtractor={(item) => item.date}
-            renderItem={renderDateGroup}
-            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom || 20 }]}
-            refreshControl={
-              <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
-            }
-          />
-        )}
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
@@ -315,15 +229,18 @@ export const HistoryScreen: React.FC = () => {
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
       >
-        <Calendar
+        <CalendarHeatmap
           year={calendarYear}
           month={calendarMonth}
           selectedDate={selectedDate}
           recordDates={recordDates}
-          onSelectDate={handleSelectDate}
+          onSelectDate={setSelectedDate}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
         />
+
+        <WeekSummary records={weekRecords} />
+
         {renderSelectedDateView()}
       </ScrollView>
     </View>
@@ -338,45 +255,15 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
-  listContent: {
-    padding: 20,
-  },
-  emptyInner: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 100,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.textLight,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
   // Calendar date selection
   selectedDateSection: {
     marginTop: 4,
-  },
-  selectedDateHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
   },
   selectedDateLabel: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
-  },
-  showAllButton: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
+    marginBottom: 12,
   },
   noContentContainer: {
     paddingVertical: 32,
@@ -386,37 +273,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textLight,
   },
-  // All records view header
-  allRecordsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  backButton: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  allRecordsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  headerSpacer: {
-    width: 50,
-  },
-  // Record cards (preserved from original)
-  dateGroup: {
-    marginBottom: 24,
-  },
-  dateHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
+  // Record cards
   recordCard: {
     backgroundColor: colors.cardBackground,
     borderRadius: 12,
@@ -425,7 +282,7 @@ const styles = StyleSheet.create({
   },
   completedCard: {
     borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+    borderLeftColor: colors.completed,
   },
   partialCard: {
     borderLeftWidth: 3,
@@ -433,11 +290,11 @@ const styles = StyleSheet.create({
   },
   postponedCard: {
     borderLeftWidth: 3,
-    borderLeftColor: colors.textLight,
+    borderLeftColor: colors.postponed,
   },
   unrecordedCard: {
     borderLeftWidth: 3,
-    borderLeftColor: colors.incomplete,
+    borderLeftColor: colors.textLight,
     backgroundColor: colors.background,
   },
   recordHeader: {
@@ -485,11 +342,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
     fontStyle: 'italic',
-  },
-  reasonNoteText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
   },
   noteText: {
     fontSize: 13,
