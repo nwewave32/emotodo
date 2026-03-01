@@ -5,20 +5,27 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#14121F"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.nwewave.emotodo",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleDisplayName": "emotodo"
+      }
     },
     "android": {
+      "package": "com.nwewave.emotodo",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#14121F"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
