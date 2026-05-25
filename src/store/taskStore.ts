@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Task, Difficulty } from '../types';
+import { TaskSchema, parseValidTasks } from '../types/schemas';
 import { storage } from '../utils/storage';
 import { isTaskScheduledForToday, isTaskScheduledForDate, getTodayString } from '../utils/date';
 
@@ -25,9 +26,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   loadTasks: async () => {
     set({ isLoading: true });
     try {
-      let tasks = await storage.getTasks<Task[]>();
+      // 신뢰할 수 없는 저장소 데이터 검증 - 손상 항목은 버리고 유효한 것만 로드
+      let tasks = parseValidTasks(await storage.getTasks<unknown>());
 
-      if (!tasks || tasks.length === 0) {
+      if (tasks.length === 0) {
         const sampleTasks: Task[] = [
           {
             id: uuidv4(),
@@ -61,7 +63,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         await storage.saveTasks(tasks);
       }
 
-      set({ tasks: tasks || [], isLoading: false });
+      set({ tasks, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -80,6 +82,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       ...(scheduledDate !== undefined && { scheduledDate }),
     };
 
+    // 입력 검증 - 잘못된 값은 저장 전에 차단
+    TaskSchema.parse(newTask);
+
     const updatedTasks = [...get().tasks, newTask];
     await storage.saveTasks(updatedTasks);
     set({ tasks: updatedTasks });
@@ -90,6 +95,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const updatedTasks = get().tasks.map((task) =>
       task.id === id ? { ...task, ...updates } : task
     );
+
+    // 변경된 task가 유효한지 검증 - 잘못된 업데이트 차단
+    const target = updatedTasks.find((task) => task.id === id);
+    if (target) {
+      TaskSchema.parse(target);
+    }
+
     await storage.saveTasks(updatedTasks);
     set({ tasks: updatedTasks });
   },

@@ -18,6 +18,7 @@ import { useThemeStore } from '../store/themeStore';
 import { messages } from '../constants/messages';
 import { DAY_LABELS } from '../utils/date';
 import { RootStackParamList, Difficulty } from '../types';
+import { TITLE_MAX_LENGTH } from '../types/schemas';
 import { getDifficultyOptions } from '../constants/difficulty';
 import { format, parse } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -328,6 +329,7 @@ export const AddTaskScreen: React.FC = () => {
           placeholder={messages.placeholders.taskTitle}
           placeholderTextColor={colors.textLight}
           autoFocus={!isEditing}
+          maxLength={TITLE_MAX_LENGTH}
         />
       </View>
 

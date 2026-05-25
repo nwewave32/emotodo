@@ -23,6 +23,7 @@ import { messages, wizard } from '../constants/messages';
 import { useRecordStore } from '../store/recordStore';
 import { useTaskStore } from '../store/taskStore';
 import { RootStackParamList, TaskStatus } from '../types';
+import { NOTE_MAX_LENGTH } from '../types/schemas';
 import { getTodayString } from '../utils/date';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Record'>;
@@ -348,6 +349,7 @@ export const RecordScreen: React.FC = () => {
               multiline
               numberOfLines={3}
               textAlignVertical='top'
+              maxLength={NOTE_MAX_LENGTH}
             />
 
             <TouchableOpacity
