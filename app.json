@@ -15,9 +15,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.nwewave.emotodo",
-      "buildNumber": "1",
       "infoPlist": {
-        "CFBundleDisplayName": "emotodo"
+        "CFBundleDisplayName": "emotodo",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -35,6 +35,11 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9056fb6d-12d1-4052-99b7-51b666dd1884"
+      }
+    }
   }
 }
